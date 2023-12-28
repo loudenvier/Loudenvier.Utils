@@ -3,37 +3,52 @@ using System.Net;
 using System.Net.Sockets;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CommunityToolkit.HighPerformance;
+using CommunityToolkit.HighPerformance.Buffers;
 
 namespace Loudenvier.Utils
 {
-    public static class NetworkStreamExtensions { 
-        
-        public static byte[] ReadBytes(this NetworkStream stm, int len, int timeoutMillis = 500) {
-            byte[] msg = new byte[len];
-            int readSize = -1;
-            int bytesReceived = 0;
-            while (readSize != 0 && bytesReceived < len) {
-                if (!System.Threading.SpinWait.SpinUntil(() => stm.DataAvailable, timeoutMillis))
-                    throw new TimeoutException("Timeout esperando por dados");
-                readSize = stm.Read(msg, bytesReceived, len - bytesReceived);
-                bytesReceived += readSize;
-            }
-            // Não verifico o tamanho do que foi lido! Cabe ao chamador verificar!
-            return msg;
+    public static class NetworkStreamExtensions {
+
+        /// <summary>
+        /// Wait for some data to arrive in the NetworkStream if a <paramref name="timeout"/> was provided.
+        /// </summary>
+        /// <param name="stream">The network stream to wait upon</param>
+        /// <param name="timeout">The timeout to wait for data (if its <c>null</c> it won't wait nor fail)</param>
+        /// <exception cref="TimeoutException">If the timeout was provided and no data arrived on the <paramref name="stream"/></exception>
+        public static void WaitForData(this NetworkStream stream, TimeSpan? timeout) {
+            if (timeout.HasValue && !System.Threading.SpinWait.SpinUntil(() => stream.DataAvailable, timeout.Value))
+                throw new TimeoutException($"Timeout expired waiting for data. The timeout was {timeout}");
         }
-        public static async Task<byte[]> ReadBytesAsync(this NetworkStream stm, int len, int? timeoutMillis = null) {
-            var timeout = timeoutMillis ?? 500;
-            byte[] msg = new byte[len];
+
+        public static ReadOnlySpan<byte> ReadBytes(this NetworkStream stm, int len, TimeSpan? startTimeout = null) {
+            stm.WaitForData(startTimeout.Value);
+            var writer = new ArrayPoolBufferWriter<byte>();
             int readSize = -1;
-            int bytesReceived = 0;
-            while (readSize != 0 && bytesReceived < len) {
-                if (!System.Threading.SpinWait.SpinUntil(() => stm.DataAvailable, timeout))
-                    throw new TimeoutException("Timeout esperando por dados");
-                readSize = await stm.ReadAsync(msg, bytesReceived, len - bytesReceived).ConfigureAwait(false);
-                bytesReceived += readSize;
+            while (readSize > 0 && writer.WrittenCount <= len) {
+                var buffer = writer.GetSpan(len);
+                readSize = stm.Read(buffer);
+                writer.Advance(readSize);
             }
-            // Não verifico o tamanho do que foi lido! Cabe ao chamador verificar!
-            return msg;
+            // We don't check how many bytes were read! Read loop could have exited if stm.Read returned 0
+            // prior to reaching len indicating the connection was closed or data transfer was stopped
+            return writer.WrittenSpan;
+        }
+
+        public static async Task<ReadOnlyMemory<byte>> ReadBytesAsync(this NetworkStream stm, int len, TimeSpan? startTimeout = null) {
+            // wait for some initial data to arrive in the NetworkStream if a timeout was provided
+            if (startTimeout.HasValue)
+                stm.WaitForData(startTimeout.Value);
+            var writer = new ArrayPoolBufferWriter<byte>();
+            int readSize = -1;
+            while (readSize > 0 && writer.WrittenCount <= len) {
+                var buffer = writer.GetMemory(len);
+                readSize = await stm.ReadAsync(buffer);
+                writer.Advance(readSize);
+            }
+            // We don't check how many bytes were read! Read loop could have exited if stm.Read returned 0
+            // prior to reaching len indicating the connection was closed or data transfer was stopped
+            return writer.WrittenMemory;
         }
 
         const int BUFFER_SIZE = 32768;
@@ -51,7 +66,6 @@ namespace Loudenvier.Utils
                 firstPacket = false;
                 if (!System.Threading.SpinWait.SpinUntil(() => stm.DataAvailable, timeout))
                     break;
-                
                 readSize = stm.Read(buffer, 0, buffer.Length);
                 if (readSize > 0) {
                     bytesReceived += readSize;

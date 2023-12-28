@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.7.34221.43
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Loudenvier.Utils", "Loudenvier.Utils\Loudenvier.Utils.csproj", "{8AF3EB01-AA7D-4161-8FDF-AB2750B726E8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Loudenvier.Utils", "Loudenvier.Utils\Loudenvier.Utils.csproj", "{8AF3EB01-AA7D-4161-8FDF-AB2750B726E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Loudenvier.Utils.Networking", "Loudenvier.Utils.Networking\Loudenvier.Utils.Networking.csproj", "{E77BDECC-D925-4FBB-875D-092625E02BBB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{8AF3EB01-AA7D-4161-8FDF-AB2750B726E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8AF3EB01-AA7D-4161-8FDF-AB2750B726E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8AF3EB01-AA7D-4161-8FDF-AB2750B726E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E77BDECC-D925-4FBB-875D-092625E02BBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E77BDECC-D925-4FBB-875D-092625E02BBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E77BDECC-D925-4FBB-875D-092625E02BBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E77BDECC-D925-4FBB-875D-092625E02BBB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
