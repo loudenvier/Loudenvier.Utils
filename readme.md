@@ -1,0 +1,9 @@
+Loudenvier.Utils
+
+This is a collection of utilities I've been using for ages in my own C# programming. Some of it is great, some of it I'm ashamed of, most of it was written in the witching hours of the night, when ghosts roam and software crashes, but all of it is very useful (to me). Whenever I started a new project I ended up referencing "my" utils collection so it was only natural to turn it into a (few) nuget(s) package(s), for easier deployment and referencing, and then upload it to github for version control. 
+
+The code does not aim to be very smart, it aims to solve common and simple problems, apease to my tastes (which will likely differ from yours), to make some repetitive tasks simple and avoid common errors and pitfalls, and ultimately help me not (re)inventing the wheel time and time again. 
+
+It does not aim for performance unless it specifically deals with performance sensitive code (like network-related code). Many parts were taken from other sources but most of these sources are long gone from (my) memory (nowadays I'm more careful to document on the sources I merge into it)
+
+Originally it was a monolithic project with many dependencies, but to publish it to nuget I've done some clean-up and organizing, segregating it into projects to only add "heavy" dependencies if you really need some specific functionality. The segregation was not by type of functionality (e.g.: date and time functions here, string functions there) but rather by the weight of dependencies it would add to a referencing project. If some function added lots of references it ended up (or should) in a separate project/package.
