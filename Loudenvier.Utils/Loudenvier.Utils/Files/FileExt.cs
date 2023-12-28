@@ -4,7 +4,7 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Codax.Util
+namespace Loudenvier.Utils
 {
     /// <summary>
     /// Some helpful file extension methods to avoid common perfomance and correctness pitfalls when dealing with
