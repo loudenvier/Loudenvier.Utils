@@ -12,7 +12,7 @@ namespace Loudenvier.Utils
         /// <typeparam name="T">The <see cref="Type"/> to convert to</typeparam>
         /// <param name="o">The object to convert</param>
         /// <returns>The <paramref name="o"/> converted to type <typeparamref name="T"/></returns>
-        public static T ConvertTo<T>(this object o, T defaultValue = default) {
+        public static T? ConvertTo<T>(this object o, T? defaultValue = default) {
             if (o is null || o == DBNull.Value || string.Empty.Equals(o))
                 return defaultValue;
             Type t = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
@@ -28,6 +28,7 @@ namespace Loudenvier.Utils
         /// <typeparam name="T">The <see cref="Type"/> to convert to</typeparam>
         /// <param name="o">The object to convert</param>
         /// <returns>The <paramref name="o"/> converted to type <typeparamref name="T"/></returns>
-        public static T To<T>(this object o, T defaultValue = default) => ConvertTo(o, defaultValue);
+        public static T? To<T>(this object o, T? defaultValue = default) => ConvertTo(o, defaultValue);
+
     }
 }

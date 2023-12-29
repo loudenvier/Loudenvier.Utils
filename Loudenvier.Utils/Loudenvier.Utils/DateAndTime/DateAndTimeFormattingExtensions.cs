@@ -73,7 +73,7 @@ namespace Loudenvier.Utils
         /// <param name="s">The textual representation of the time</param>
         /// <param name="patterns">An optional <see cref="NaturalLanguageTimeParser.Patterns"/> to use for parsing</param>
         /// <returns>The converted text to <see cref="TimeSpan"/></returns>
-        public static TimeSpan ToTimeSpanFromNaturalLanguage(this string s, NaturalLanguageTimeParser.Patterns patterns = null)
+        public static TimeSpan ToTimeSpanFromNaturalLanguage(this string s, NaturalLanguageTimeParser.Patterns? patterns = null)
             => new NaturalLanguageTimeParser(patterns ?? NaturalLanguageTimeParser.Patterns.Default).Execute(s);
 
         /// <summary>

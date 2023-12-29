@@ -70,7 +70,7 @@ namespace Loudenvier.Utils
             return await fs.ReadAllBytesAsync().ConfigureAwait(false);
         }
         
-        public static string GetFolderAtDepth(this string filename, int depth=3) {
+        public static string? GetFolderAtDepth(this string filename, int depth=3) {
             if (filename == null) return null;
             if (depth < 1)
                 throw new ArgumentOutOfRangeException("depth", "depth deve ser maior do que 0");

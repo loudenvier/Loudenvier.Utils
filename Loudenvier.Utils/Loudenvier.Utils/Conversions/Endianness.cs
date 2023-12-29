@@ -5,8 +5,8 @@ namespace Loudenvier.Utils
     public static class Endianness
     {
 #if BIGENDIAN
-        public static readonly bool IsLittleEndian;
-#else
+        public static readonly bool IsLittleEndian = false;
+#else 
         public static readonly bool IsLittleEndian = true;
 #endif
         public static readonly bool IsBigEndian = !IsLittleEndian;
@@ -103,6 +103,85 @@ namespace Loudenvier.Utils
         /// <returns>The data in the array converted from network byte-order into the hosts order</returns>
         public static ushort ToUShortFromNetworkByteOrder(this byte[] data, int start = 0)
             => BitConverterBigEndian.ToUInt16(data, start);
+
+        #region methods to ENSURE integral types are big or little endian (e.g., only change byte order if needed)
+
+        public static long BigEndian(this long v) =>
+#if BIGENDIAN
+            v;
+#else 
+            v.ChangeByteOrder();
+#endif
+        public static ulong BigEndian(this ulong v) =>
+#if BIGENDIAN
+            v;
+#else 
+            v.ChangeByteOrder();
+#endif
+        public static int BigEndian(this int v) =>
+#if BIGENDIAN
+            v;
+#else 
+            v.ChangeByteOrder();
+#endif
+        public static uint BigEndian(this uint v) =>
+#if BIGENDIAN
+            v;
+#else 
+            v.ChangeByteOrder();
+#endif
+        public static short BigEndian(this short v) =>
+#if BIGENDIAN
+            v;
+#else 
+            v.ChangeByteOrder();
+#endif
+        public static ushort BigEndian(this ushort v) =>
+#if BIGENDIAN
+            v;
+#else 
+            v.ChangeByteOrder();
+#endif
+
+        public static long LittleEndian(this long v) =>
+#if BIGENDIAN
+            v.ChangeByteOrder();
+#else
+            v;
+#endif
+        public static ulong LittleEndian(this ulong v) =>
+#if BIGENDIAN
+            v.ChangeByteOrder();
+#else
+            v;
+#endif
+        public static int LittleEndian(this int v) =>
+#if BIGENDIAN
+            v.ChangeByteOrder();
+#else
+            v;
+#endif
+        public static uint LittleEndian(this uint v) =>
+#if BIGENDIAN
+            v.ChangeByteOrder();
+#else
+            v;
+#endif
+        public static short LittleEndian(this short v) =>
+#if BIGENDIAN
+            v.ChangeByteOrder();
+#else
+            v;
+#endif
+        public static ushort LittleEndian(this ushort v) =>
+#if BIGENDIAN
+            v.ChangeByteOrder();
+#else
+            v;
+#endif
+
+        #endregion
+
     }
 
     /// <summary>

@@ -8,7 +8,7 @@ namespace Loudenvier.Utils
         public const uint DefaultPolynomial = 0xedb88320u;
         public const uint DefaultSeed = 0xffffffffu;
 
-        static uint[] defaultTable;
+        static uint[]? defaultTable;
 
         readonly uint seed;
         readonly uint[] table;

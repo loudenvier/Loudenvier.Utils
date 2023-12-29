@@ -2,6 +2,10 @@
 
 namespace Loudenvier.Utils
 {
+    /// <summary>
+    /// Provides extensions methods to convert date and time from various sources (UNIX, JAVA, etc.)
+    /// into .NET's <see cref="DateTime"/> and <see cref="DateTimeOffset"/> types.
+    /// </summary>
     public static class DateAndTimeConversionExtensions {
 
         /// <summary>Same as UNIX and Java's EPOCH</summary>

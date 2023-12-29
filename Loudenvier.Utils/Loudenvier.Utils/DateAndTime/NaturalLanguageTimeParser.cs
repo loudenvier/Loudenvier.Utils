@@ -97,7 +97,7 @@ namespace Loudenvier.Utils
             return new TimeSpan(days ?? 0, hours ?? 0, mins ?? 0, secs ?? 0, msecs ?? 0);
         }
 
-        private PartKind ParseKind(string kind) {
+        private PartKind ParseKind(string? kind) {
             if (ParserPatterns.DayMatcher.IsMatch(kind))
                 return PartKind.Day;
             if (ParserPatterns.HourMatcher.IsMatch(kind))

@@ -65,7 +65,7 @@ namespace Loudenvier.Utils
 
         const int DEFAULT_BUFFER_SIZE = 8192; // same as TcpClient, Socket, etc.
 
-        public static ReadOnlySpan<byte> ReadToEOM(NetworkStream stm, byte EOM, TimeSpan? startTimeout = null, 
+        public static ReadOnlySpan<byte> ReadToEOM(this NetworkStream stm, byte EOM, TimeSpan? startTimeout = null, 
             int bufferSize = DEFAULT_BUFFER_SIZE) {
             stm.WaitForData(startTimeout);
             var writer = new ArrayPoolBufferWriter<byte>();

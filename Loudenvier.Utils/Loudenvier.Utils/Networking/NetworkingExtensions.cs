@@ -19,10 +19,10 @@ namespace Loudenvier.Utils
         /// outboung IP Address the result can vary for different targets on machines with multiple network
         /// interfaces. It normally finds out the correct, preferred local IP (which is NOT your NAT IP!).</remarks>
         /// <returns></returns>
-        public static IPAddress GetLocalIPv4Address(string targetIp = null) {
+        public static IPAddress GetLocalIPv4Address(string? targetIp = null) {
             using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0);
             socket.Connect(targetIp ?? "8.8.8.8", 65530);
-            IPEndPoint endPoint = socket.LocalEndPoint as IPEndPoint;
+            IPEndPoint endPoint = (IPEndPoint)socket.LocalEndPoint;
             return endPoint.Address;
         }
 
@@ -63,7 +63,7 @@ namespace Loudenvier.Utils
         /// to provide custom values to the parameters</remarks>
         /// <param name="mac">The MAC represented as a <see cref="long"/></param>
         /// <returns>The formatted MAC Address</returns>
-        public static string ToFormattedMACAddress(this long mac)
+        public static string? ToFormattedMACAddress(this long mac)
             => mac == 0 ? null : mac.ToMACAddress().ToFormattedString();
 
         /// <summary>Converts the <paramref name="mac"/> address to its integral (<see cref="long"/>) representation</summary>
@@ -117,7 +117,7 @@ namespace Loudenvier.Utils
         /// <returns>The <see cref="IPAddress"/> represented by <paramref name="hostNameOrAddress"/> in either IpV4 or
         /// IpV6 (when available) format depending on <paramref name="favorIpV6"/>, or <see cref="null"/> if 
         /// <paramref name="hostNameOrAddress"/> is null.</returns>
-        public static IPAddress ToIPAddress(this string hostNameOrAddress, bool favorIpV6 = false) {
+        public static IPAddress? ToIPAddress(this string hostNameOrAddress, bool favorIpV6 = false) {
             if (string.IsNullOrWhiteSpace(hostNameOrAddress))
                 return null;
             if (hostNameOrAddress.ToLowerInvariant() == "auto")
@@ -133,7 +133,7 @@ namespace Loudenvier.Utils
         /// <summary>Removes the "http://" or "https://" part of a URL (if present).</summary>
         /// <param name="url">The string representing an URL with a possible http(s) part removed from it</param>
         /// <returns>The string with the http(s) prefix removed (or itself if no prefix is found)</returns>
-        public static string RemoveHttpPart(this string url) 
+        public static string? RemoveHttpPart(this string url) 
             => url?.TrimStart().TrimStart(prefixes, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>Converts a string in the form {IP ADDRESS|HOST NAME}[:{PORT}] (192.168.0.2:8080) into an <see cref="IPEndPoint"/>. 
@@ -144,10 +144,10 @@ namespace Loudenvier.Utils
         /// <param name="separator">An optional IP/port separator (defaults to 80)</param>
         /// <returns>The parsed <see cref="IPEndPoint"/></returns>
         /// <exception cref="ArgumentNullException">Throws if <paramref name="ipAddressWithPort"/> is null</exception>
-        public static IPEndPoint ToIPEndPoint(this string ipAddressWithPort, int defaultPort = 80, char separator = ':') {
-            if (string.IsNullOrWhiteSpace(ipAddressWithPort))
+        public static IPEndPoint ToIPEndPoint(this string? ipAddressWithPort, int defaultPort = 80, char separator = ':') {
+            if (ipAddressWithPort is null ||  string.IsNullOrWhiteSpace(ipAddressWithPort))
                 throw new ArgumentNullException("ipAddressWithPort");
-            ipAddressWithPort = ipAddressWithPort.RemoveHttpPart();
+            ipAddressWithPort = ipAddressWithPort.RemoveHttpPart()!;
             var parts = ipAddressWithPort.Split(new[] { separator }, StringSplitOptions.RemoveEmptyEntries);
             var ip = parts[0];
             int port = parts.Length > 1 ? Convert.ToInt32(parts[1]) : defaultPort;
@@ -162,13 +162,13 @@ namespace Loudenvier.Utils
         /// <param name="ipOrHostNameWithPort">The ip|host:port string to "separate"</param>
         /// <param name="defaultPort">The default port to use if no port was present in the string</param>
         /// <returns></returns>
-        public static Tuple<string, int> ToIpOrHostAndPort(this string ipOrHostNameWithPort, int defaultPort = 80) {
-            if (string.IsNullOrWhiteSpace(ipOrHostNameWithPort))
-                return new Tuple<string, int>(null, 0);
-            var addr = ipOrHostNameWithPort.RemoveHttpPart();
+        public static (string?, int) ToIpOrHostAndPort(this string? ipOrHostNameWithPort, int defaultPort = 80) {
+            if (ipOrHostNameWithPort is null || string.IsNullOrWhiteSpace(ipOrHostNameWithPort))
+                return (null, 0);
+            var addr = ipOrHostNameWithPort.RemoveHttpPart()!;
             var parts = addr.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
             var port = parts.Length > 1 ? Convert.ToInt32(parts[1]) : defaultPort;
-            return new Tuple<string, int>(parts[0], port);
+            return (parts[0], port);
         }
 
     }

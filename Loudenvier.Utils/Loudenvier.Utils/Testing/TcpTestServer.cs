@@ -1,32 +1,39 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Loudenvier.Utils.Testing
 {
-    public class TcpTestServer : IDisposable
-    {
-        public TcpTestServer(IPEndPoint endpoint, int fixedLengthSize, byte eom) {
-            this.endpoint = endpoint;
-            bufferToSend = new byte[fixedLengthSize];
-            bufferToSend[^1] = eom; 
+    public class TcpTestServer : IDisposable {
+        public TcpTestServer(IPEndPoint endpoint, int length = 1024, byte eom = 0, byte bom = 0) {
+            EndPoint = endpoint;
+            Length = length;
+            EOM = eom;
+            BOM = bom;
+            GetBytesToSend = () => {
+                bufferToSend ??= new byte[Length];
+                bufferToSend[0] = BOM;
+                bufferToSend[^1] = EOM;
+                return bufferToSend;
+            };
         }
 
         public void Stop() {
             if (serveTask == null) return;
+            server?.Stop();
             cts?.Cancel();
             serveTask.Wait();
         }
 
+        TcpListener? server;
+
         public void Start() {
-            if (disposedValue) throw new ObjectDisposedException(GetType().Name);   
+            if (disposedValue) throw new ObjectDisposedException(GetType().Name);
             if (serveTask != null) return;
-            var ct = cts.Token;
-            var server = new TcpListener(endpoint);
+            var ct = cts!.Token;
+            server = new TcpListener(EndPoint);
             server.Start();
             serveTask = Task.Run(() => {
                 try {
@@ -34,21 +41,25 @@ namespace Loudenvier.Utils.Testing
                     while (!ct.IsCancellationRequested) {
                         try {
                             var client = server.AcceptTcpClient();
-                            // offloads sending data in another thread (accepts TcpClient as soon as possible)
+                            // offloads sending data to another thread (accepts TcpClient as soon as possible)
                             Task.Run(() => {
                                 try {
                                     var clientStream = client.GetStream();
                                     if (ct.IsCancellationRequested) return;
-                                    var bytes = GetBytesToSend();
+                                    var bytes = GetBytesToSend?.Invoke();
+                                    if (bytes == null) return;
                                     clientStream.Write(bytes, 0, bytes.Length);
+                                    DataSent?.Invoke(bytes);
                                     if (ct.IsCancellationRequested) return;
                                     clientStream.Flush();
                                 } catch (Exception ex) {
+                                    ErrorSending?.Invoke(ex);
                                 } finally {
                                     try { client.Close(); } catch { }
                                 }
                             }, ct);
                         } catch (Exception ex) {
+                            ErrorAcceptingClient?.Invoke(ex);
                         }
                     }
                 } finally {
@@ -57,34 +68,34 @@ namespace Loudenvier.Utils.Testing
             }, ct);
         }
 
-        readonly byte[] bufferToSend;
-        byte[] GetBytesToSend() => bufferToSend;
+        public int Length { get; }
+        public byte EOM { get; }
+        public byte BOM { get; }
+        public IPEndPoint EndPoint { get; }
 
-        IPEndPoint endpoint;
-        CancellationTokenSource cts = new();
-        Task serveTask;
+        byte[]? bufferToSend;
+
+        // Hooks for test customization purposes
+        public Func<byte[]>? GetBytesToSend { get; set; }
+        public Action<byte[]>? DataSent { get; set; }
+        public Action<Exception>? ErrorSending { get; set; }
+        public Action<Exception>? ErrorAcceptingClient { get; set; }
+
+
+        CancellationTokenSource? cts = new();
+        Task? serveTask;
+
         private bool disposedValue;
 
         protected virtual void Dispose(bool disposing) {
             if (!disposedValue) {
-                if (disposing) {
+                if (disposing) 
                     Stop();
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-                // TODO: set large fields to null
                 disposedValue = true;
                 cts = null;
                 serveTask = null;
             }
         }
-
-        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        // ~TcpTestServer()
-        // {
-        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        //     Dispose(disposing: false);
-        // }
 
         public void Dispose() {
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method

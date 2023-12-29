@@ -27,7 +27,7 @@ namespace Loudenvier.Utils
             _ => CalculateModbus(buffer, length),
         };
 
-        public static ushort Calculate(Crc16Method method, string Buffer, int length, Encoding encoding = null) {
+        public static ushort Calculate(Crc16Method method, string Buffer, int length, Encoding? encoding = null) {
             if (string.IsNullOrEmpty(Buffer) || length == 0)
                 return 0;
             encoding ??= Encoding.GetEncoding("us-ascii"); // ASCIIEncoding.ASCII;
@@ -35,11 +35,11 @@ namespace Loudenvier.Utils
             return Calculate(method, buffer, length);
         }
 
-        public static ushort CalculateModbus(string Buffer, int length, Encoding encoding = null)
+        public static ushort CalculateModbus(string Buffer, int length, Encoding? encoding = null)
             => Calculate(Crc16Method.Modbus, Buffer, length, encoding);
-        public static ushort CalculateCCITTxFFFF(string Buffer, int length, Encoding encoding = null)
+        public static ushort CalculateCCITTxFFFF(string Buffer, int length, Encoding? encoding = null)
             => Calculate(Crc16Method.CCITTxFFFF, Buffer, length, encoding);
-        public static ushort CalculateKermit(string Buffer, int length, Encoding encoding = null)
+        public static ushort CalculateKermit(string Buffer, int length, Encoding? encoding = null)
             => Calculate(Crc16Method.Kermit, Buffer, length, encoding);
 
 

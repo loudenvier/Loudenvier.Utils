@@ -20,7 +20,7 @@ namespace Loudenvier.Utils
         /// <param name="data">The non-url-encoded contents of this dataUrl.</param>
         /// <param name="contentType">The optional mime media type with optional parameters</param>
         /// <param name="encoding">The optional encoding ('base64' is the only useful encoding currently)</param>
-        public DataUrl(string data, string contentType = null, string encoding = null) {
+        public DataUrl(string data, string? contentType = null, string? encoding = null) {
             Data = data;
             if (!string.IsNullOrEmpty(contentType)) {
                 ContentMediaType = new ContentType(contentType);
@@ -33,11 +33,11 @@ namespace Loudenvier.Utils
             Base64Encoded = encoding == Base64Encoding;
         }
         /// <summary>The media type of this dataUrl (if null 'text/plain' should be inferred -> <see cref="MediaTypeOrDefault"/>)</summary>
-        public string MediaType { get; private set; }
+        public string? MediaType { get; private set; }
         public Dictionary<string, string> MediaTypeParameters { get; private set; } = new Dictionary<string, string>();
-        public ContentType ContentMediaType { get; private set; }
+        public ContentType? ContentMediaType { get; private set; }
         /// <summary>Returns the encoding (currently only 'base64' is of any use)</summary>
-        public string Encoding { get; private set; }
+        public string? Encoding { get; private set; }
         /// <summary>Returns if the Data is Base64 encoded</summary>
         public bool Base64Encoded { get; private set; }
         /// <summary>The contents of this data URL. It may be a base64 string or a plain text string which is not URL Encoded.</summary>
@@ -47,7 +47,7 @@ namespace Loudenvier.Utils
         /// <summary>Returns the MediaType or "text/plain" if the Media Type is not defined.</summary>
         public string MediaTypeOrDefault => MediaType ?? DefaultMediaType;
         /// <summary>Returns the URL Encoded string data, but only if it's not Base64 encoded, in which case it return null.</summary>
-        public string PercentEncodedData => Base64Encoded ? null : Uri.EscapeDataString(Data);
+        public string? PercentEncodedData => Base64Encoded ? null : Uri.EscapeDataString(Data);
         /// <summary>If there's a <see cref="MediaType"/> defined returns a string in the form {mediaType/Encoding}</summary>
         public string MediaTypeAndEncoding {
             get {
@@ -69,7 +69,7 @@ namespace Loudenvier.Utils
         /// </summary>
         /// <param name="encoding">The character encoding used if the data is plain text (if ommited will default to UTF8)</param>
         /// <returns>A byte array representation of the Data in this object</returns>
-        public byte[] GetDataBytes(Encoding encoding = null) {
+        public byte[] GetDataBytes(Encoding? encoding = null) {
             if (Base64Encoded)
                 return Convert.FromBase64String(Data);
             return (encoding ?? UTF8NoBOM).GetBytes(Data);
@@ -99,7 +99,7 @@ namespace Loudenvier.Utils
         /// </summary>
         /// <param name="stm">The destination stream</param>
         /// <param name="encoding">The character encoding used if the data is plain text (if ommited will default to UTF8)</param>
-        public void SaveData(Stream stm, Encoding encoding=null) {
+        public void SaveData(Stream stm, Encoding? encoding=null) {
             var bytes = GetDataBytes(encoding);
             stm.Write(bytes, 0, bytes.Length);
         }
@@ -125,9 +125,11 @@ namespace Loudenvier.Utils
         /// <param name="dataUrl">The contents of the data url</param>
         /// <returns>An instance of <see cref="DataUrl"/> parsed from <paramref name="dataUrl"/></returns>
         public static DataUrl Parse(string dataUrl, bool percentEncoded=true) {
-            if (dataUrl?.Length < minLength) 
+            if (dataUrl == null) 
+                throw new ArgumentNullException(nameof(dataUrl));
+            if (dataUrl.Length < minLength) 
                 throw new FormatException($"The DataUrl is smaller than the minimun length of {minLength}. DataUrl: {dataUrl}");
-            var readPrefix = dataUrl.Substring(0, prefix.Length);
+            var readPrefix = dataUrl[..prefix.Length];
             if (readPrefix != prefix)
                 throw new FormatException($"The DataUrl has a wrong prefix. Expected: {prefix} - Found: {readPrefix}");
             var dataSepIdx = dataUrl.IndexOf(',', prefix.Length);
@@ -139,8 +141,8 @@ namespace Loudenvier.Utils
             var content = dataUrl.Substring(dataSepIdx+1);
             // mime type and encoding are optional, when present are separated by ';'
             // but mime type may have parameters also separated by ';'
-            string mime = null;
-            string enc = null;
+            string? mime = null;
+            string? enc = null;
             if (!string.IsNullOrWhiteSpace(mimeAndEncoding)) {
                 var mimePartLength = mimeAndEncoding.Length;
                 // let's check if it has an encoding
