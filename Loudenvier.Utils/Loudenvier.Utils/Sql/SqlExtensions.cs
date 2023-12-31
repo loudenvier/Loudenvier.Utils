@@ -8,14 +8,31 @@ namespace Codax.Util
     /// </summary>
     public static class SqlExtensions
     {
-        /// <summary>Checks if <paramref name="ex"/> is or contains an inner exception representing
-        /// a duplicate key violation (either a primary key or a 
+        /// <summary>
+        /// Check to see if an exception represents a unique key violation (either unique key, unique constraint).
         /// </summary>
         /// <param name="ex"></param>
-        /// <returns></returns>
+        /// <returns><c>true</c> if the exception <paramref name="ex"/> represents a unique key violation, false otherwise.</returns>
+        static bool IsDupKeyExInternal(Exception ex) {
+            return ex switch {
+                _ => false
+            };
+        }
+
+        /// <summary>Checks if <paramref name="ex"/> is or contains an inner exception representing
+        /// a duplicate key violation (either a primary key or a unique constraint)
+        /// </summary>
+        /// <remarks>This code only works with MS SQL Server. New engines could be added</remarks>
+        /// <param name="ex">The exception (and inner exceptions) to inspect for key violations</param>
+        /// <returns><c>true</c> if the exception <paramref name="ex"/> contains or is itself a SQL Server key violation</returns>
         public static bool IsDuplicateKeyException(this Exception ex)
         {
-            return (ex.Message.Contains("duplicate key"));
+            if (IsDupKeyExInternal(ex)) 
+                return true;
+            while((ex = ex!.InnerException) is not null) 
+               if (IsDupKeyExInternal(ex)) 
+                    return true;
+            return false;
         }
 
           /// <summary>Redacts a password from a connection string with a provided <paramref name="redact"/> (defaults to "*****").
