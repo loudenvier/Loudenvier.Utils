@@ -18,7 +18,8 @@ namespace Loudenvier.Utils
         }
 
         public static PortState CheckPortState(string ipOrHost, int port, TimeSpan? timeout = null) {
-            var endpoint = new IPEndPoint(ipOrHost.ToIPAddress(), port);
+            var ip = ipOrHost.ToIPAddress() ?? throw new ArgumentException(nameof(ipOrHost), "Invalid IP or Host: " + ipOrHost);
+            var endpoint = new IPEndPoint(ip, port);
             return endpoint.CheckPortState(timeout);
         }
 

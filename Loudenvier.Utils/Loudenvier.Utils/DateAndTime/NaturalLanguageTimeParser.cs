@@ -4,46 +4,25 @@ using System.Text.RegularExpressions;
 
 namespace Loudenvier.Utils
 {
+    /// <summary>
+    /// Implements a very permissive and localizable time parser for "natural language" 
+    /// strings like <c>8h 30min</c>, or <c>1 day 3 hours 25 seconds</c>. You can localize the parser 
+    /// by adding a properly configured <see cref="TimePatterns"/> object to the static
+    /// <see cref="TimePatterns.Language"/> dictionary (english and portuguese localizations are built-in).
+    /// </summary>
     public class NaturalLanguageTimeParser
     {
         enum PartKind { Day, Hour, Min, Sec, MSec };
 
-        public class Patterns {
-            private static readonly RegexOptions opts = RegexOptions.IgnoreCase | RegexOptions.Compiled;
-            public Regex PartsGrabber { get; init; } = new(@"(-?\s?\d+)([\sA-Za-z]+)", opts);
-            public Regex DayMatcher { get; init; } = new(@"\bdays*\b|\bds*\b", opts);
-            public Regex HourMatcher { get; init; } = new(@"\bhours*\b|\bhs*\b", opts);
-            public Regex MinuteMatcher { get; init; } = new(@"\bminutes*|\bmins*\b|\bm\b", opts);
-            public Regex SecondMatcher { get; init; } = new(@"\bseconds*|\bsecs*\b|\bs\b", opts);
-            public Regex MillisecondMatcher { get; init; } = new(@"\bmilliseconds*|\bmsecs*\b|\bmillis*\b|\bms\b", opts);
+        public NaturalLanguageTimeParser(TimePatterns patterns) { ParserPatterns = patterns ?? TimePatterns.Default; }
+        public NaturalLanguageTimeParser(string languageCode) : this(TimePatterns.Language[languageCode]) { }
 
-            public static Patterns Pt = new() {
-                DayMatcher = new Regex(@"\bdias*\b|\bds*\b", opts),
-                HourMatcher = new Regex(@"\bhoras*\b|\bhs*\b", opts),
-                MinuteMatcher = new Regex(@"\bminutos*|\bmins*\b|\bm\b", opts),
-                SecondMatcher = new Regex(@"\bsegundos*|\bsegs*\b|\bs\b", opts),
-                MillisecondMatcher = new Regex(@"\bmilissegundos*|\bmsegs*\b|\bmilis*\b|\bms\b", opts),
-            };
-
-            public static Patterns En = new();
-
-            public static Patterns Default = Pt;
-
-            public static Dictionary<string, Patterns> Language = new() {
-                { "pt", Pt },
-                { "en", En },
-            };
-        }
-
-        public NaturalLanguageTimeParser(Patterns patterns) { ParserPatterns = patterns ?? Patterns.Default; }
-        public NaturalLanguageTimeParser(string languageCode) : this(Patterns.Language[languageCode]) { }
-
-        public Patterns ParserPatterns { get; private set; }
+        public TimePatterns ParserPatterns { get; private set; }
 
         public TimeSpan Execute(string timeStr) {
             MatchCollection parts = ParserPatterns.PartsGrabber.Matches(timeStr);
             if (parts.Count < 1) 
-                throw new FormatException($"The textual time spandefition is invalid: {timeStr}");
+                throw new FormatException($"The textual timespan defition is invalid: {timeStr}");
             int? days = null;
             int? hours = null;
             int? mins = null;
@@ -98,20 +77,50 @@ namespace Loudenvier.Utils
         }
 
         private PartKind ParseKind(string? kind) {
-            if (ParserPatterns.DayMatcher.IsMatch(kind))
-                return PartKind.Day;
-            if (ParserPatterns.HourMatcher.IsMatch(kind))
-                return PartKind.Hour;
-            if (ParserPatterns.MinuteMatcher.IsMatch(kind))
-                return PartKind.Min;
-            if (ParserPatterns.SecondMatcher.IsMatch(kind))
-                return PartKind.Sec;
-            if (ParserPatterns.MillisecondMatcher.IsMatch(kind))
-                return PartKind.MSec;
+            if (kind is not null) {
+                if (ParserPatterns.DayMatcher.IsMatch(kind))
+                    return PartKind.Day;
+                if (ParserPatterns.HourMatcher.IsMatch(kind))
+                    return PartKind.Hour;
+                if (ParserPatterns.MinuteMatcher.IsMatch(kind))
+                    return PartKind.Min;
+                if (ParserPatterns.SecondMatcher.IsMatch(kind))
+                    return PartKind.Sec;
+                if (ParserPatterns.MillisecondMatcher.IsMatch(kind))
+                    return PartKind.MSec;
+            }
             throw new FormatException("The time duration definition is invalid: " + kind);
         }
         
     }
 
-    
+    public class TimePatterns
+    {
+        private static readonly RegexOptions opts = RegexOptions.IgnoreCase | RegexOptions.Compiled;
+        public Regex PartsGrabber { get; init; } = new(@"(-?\s?\d+)([\sA-Za-z]+)", opts);
+        public Regex DayMatcher { get; init; } = new(@"\bdays*\b|\bday*\b|\bds*\b|\bd*\b", opts);
+        public Regex HourMatcher { get; init; } = new(@"\bhours*\b|\bhour*\b|\bhs*\b|\bh*\b", opts);
+        public Regex MinuteMatcher { get; init; } = new(@"\bminutes*|\bmins*\b|\bmin*\b|\bm\b", opts);
+        public Regex SecondMatcher { get; init; } = new(@"\bseconds*|\bsecs*\b|\bsec*\b|\bs\b", opts);
+        public Regex MillisecondMatcher { get; init; } = new(@"\bmilliseconds*|\bmsecs*\b|\bmsec*\b|\bmillis*\b|\bmilli*\b|\bms\b", opts);
+
+        public static TimePatterns Pt = new() {
+            DayMatcher = new Regex(@"\bdias*\b|\bdia*\b|\bds*\b|\bd*\b", opts),
+            HourMatcher = new Regex(@"\bhoras*\b|\bhora*\b|\bhs*\b|\bh*\b", opts),
+            MinuteMatcher = new Regex(@"\bminutos*|\bmins*\b|\bmin*\b|\bm\b", opts),
+            SecondMatcher = new Regex(@"\bsegundos*|\bsegs*\b|\bseg*\b|\bs\b", opts),
+            MillisecondMatcher = new Regex(@"\bmilissegundos*|\bmsegs*\b|\bmseg*\b|\bmilis*\b|\bmili*\b|\bms\b", opts),
+        };
+
+        public static TimePatterns En = new();
+
+        public static TimePatterns Default = Pt;
+
+        public static Dictionary<string, TimePatterns> Language = new() {
+                { "pt", Pt },
+                { "en", En },
+            };
+    }
+
+
 }

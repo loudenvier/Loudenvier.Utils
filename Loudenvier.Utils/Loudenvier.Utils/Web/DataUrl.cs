@@ -27,7 +27,7 @@ namespace Loudenvier.Utils
                 MediaType = ContentMediaType.MediaType;
                 MediaTypeParameters = new Dictionary<string, string>();
                 foreach (string key in ContentMediaType.Parameters.Keys)
-                    MediaTypeParameters.Add(key, ContentMediaType.Parameters[key]);
+                    MediaTypeParameters.Add(key, ContentMediaType!.Parameters![key]!);
             }
             Encoding = encoding;
             Base64Encoded = encoding == Base64Encoding;
@@ -88,7 +88,9 @@ namespace Loudenvier.Utils
                 if (!string.IsNullOrWhiteSpace(ext))
                     fileName += ext;
             }
-            Directory.CreateDirectory(Path.GetDirectoryName(fileName));
+            var dir = Path.GetDirectoryName(fileName);
+            if (dir is not null)
+                Directory.CreateDirectory(dir);
             var stm = new FileStream(fileName, FileMode.Create);
             SaveData(stm);
             return fileName;
@@ -136,9 +138,9 @@ namespace Loudenvier.Utils
             if (dataSepIdx <= 0)
                 throw new FormatException($"The DataUrl has no data separator (,): DataUrl: {dataUrl}");
             // optional mime and encoding lies from data: to the first ','  
-            var mimeAndEncoding = dataUrl.Substring(prefix.Length, dataSepIdx - prefix.Length);
+            var mimeAndEncoding = dataUrl[prefix.Length..dataSepIdx];
             // content lies just after the position of the aforementioned ',' 
-            var content = dataUrl.Substring(dataSepIdx+1);
+            var content = dataUrl[(dataSepIdx + 1)..];
             // mime type and encoding are optional, when present are separated by ';'
             // but mime type may have parameters also separated by ';'
             string? mime = null;
@@ -149,7 +151,7 @@ namespace Loudenvier.Utils
                 var lastIdx = mimeAndEncoding.LastIndexOf(';');
                 if (lastIdx >= 0) {
                     // it may have an encoding... (currently only base64 makes sense)
-                    var possibleEnc = mimeAndEncoding.Substring(lastIdx + 1);
+                    var possibleEnc = mimeAndEncoding[(lastIdx + 1)..];
                     // ...if it's not a attr=value pair (I won't consider starting '=' as valid)
                     if (possibleEnc.IndexOf('=') < 1) {
                         enc = possibleEnc;
@@ -157,7 +159,7 @@ namespace Loudenvier.Utils
                         mimePartLength -= possibleEnc.Length + 1;
                     }
                 }
-                mime = mimeAndEncoding.Substring(0, mimePartLength);
+                mime = mimeAndEncoding[..mimePartLength];
             }
             // if the caller is telling us that the string is percent encoded, lets decode it as DataUrl requires
             if (percentEncoded)

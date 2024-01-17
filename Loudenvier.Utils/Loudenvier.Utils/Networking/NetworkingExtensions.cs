@@ -20,10 +20,12 @@ namespace Loudenvier.Utils
         /// interfaces. It normally finds out the correct, preferred local IP (which is NOT your NAT IP!).</remarks>
         /// <returns></returns>
         public static IPAddress GetLocalIPv4Address(string? targetIp = null) {
-            using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0);
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0);
             socket.Connect(targetIp ?? "8.8.8.8", 65530);
-            IPEndPoint endPoint = (IPEndPoint)socket.LocalEndPoint;
-            return endPoint.Address;
+            if (socket.LocalEndPoint is IPEndPoint endpoint)
+                return endpoint.Address;
+            // this should never, ever happens!
+            throw new ArgumentException("Local end point is not an IPEndPoint");
         }
 
         /// <summary>Converts a string in standard IEEE 802 (EUI-48/64) to a MAC (<see cref="PhysicalAddress"/>) 
@@ -152,7 +154,7 @@ namespace Loudenvier.Utils
             var ip = parts[0];
             int port = parts.Length > 1 ? Convert.ToInt32(parts[1]) : defaultPort;
             var ipAddr = ip.ToIPAddress();
-            return new IPEndPoint(ipAddr, port);
+            return new IPEndPoint(ipAddr!, port);
         }
 
         /// <summary>

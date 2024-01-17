@@ -71,10 +71,10 @@ namespace Loudenvier.Utils
         /// Converts a time string in natural language (e.g.: 34h22m) into <see cref="TimeSpan"/> in a somewhat forgiving manner
         /// </summary>
         /// <param name="s">The textual representation of the time</param>
-        /// <param name="patterns">An optional <see cref="NaturalLanguageTimeParser.Patterns"/> to use for parsing</param>
+        /// <param name="patterns">An optional <see cref="NaturalLanguageTimeParser.TimePatterns"/> to use for parsing</param>
         /// <returns>The converted text to <see cref="TimeSpan"/></returns>
-        public static TimeSpan ToTimeSpanFromNaturalLanguage(this string s, NaturalLanguageTimeParser.Patterns? patterns = null)
-            => new NaturalLanguageTimeParser(patterns ?? NaturalLanguageTimeParser.Patterns.Default).Execute(s);
+        public static TimeSpan ToTimeSpanFromNaturalLanguage(this string s, TimePatterns? patterns = null)
+            => new NaturalLanguageTimeParser(patterns ?? TimePatterns.Default).Execute(s);
 
         /// <summary>
         /// Converts a time string in natural language (e.g.: 34h22m) into a <see cref="TimeSpan"/> in a somewhat forgiving manner

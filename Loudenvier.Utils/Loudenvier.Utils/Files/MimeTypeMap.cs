@@ -8,7 +8,7 @@ namespace Loudenvier.Utils
     {
         private const string Dot = ".";
         private const string DefaultMimeType = "application/octet-stream";
-        private static readonly Lazy<IDictionary<string, string>> _mappings = new Lazy<IDictionary<string, string>>(BuildMappings);
+        private static readonly Lazy<IDictionary<string, string>> _mappings = new(BuildMappings);
 
         private static IDictionary<string, string> BuildMappings() {
             var mappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
@@ -729,7 +729,7 @@ namespace Loudenvier.Utils
                 extension = Dot + extension;
             }
 
-            return _mappings.Value.TryGetValue(extension, out string mime) ? mime : DefaultMimeType;
+            return _mappings.Value.TryGetValue(extension, out string? mime) ? mime : DefaultMimeType;
         }
 
         public static string GetExtension(string mimeType, bool throwErrorIfNotFound = true) {
@@ -741,7 +741,7 @@ namespace Loudenvier.Utils
                 throw new ArgumentException("Requested mime type is not valid: " + mimeType);
             }
 
-            if (_mappings.Value.TryGetValue(mimeType, out string extension)) {
+            if (_mappings.Value.TryGetValue(mimeType, out string? extension)) {
                 return extension;
             }
 

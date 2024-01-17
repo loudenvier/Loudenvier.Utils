@@ -20,6 +20,14 @@ namespace Loudenvier.Utils
     /// </summary>
     public static class Crc16
     {
+        /// <summary>
+        /// Calculates the CRC-16 from the bytes in <paramref name="buffer"/> up to the specified <paramref name="length"/>
+        /// with a specific industry standard <paramref name="method"/>.
+        /// </summary>
+        /// <param name="method">The CRC-16 industry standard to employ for calculation</param>
+        /// <param name="buffer">An array of 8-bit unsigned integers</param>
+        /// <param name="length">The length of data in the <paramref name="buffer"/> to include in the calculation</param>
+        /// <returns>The computed CRC-16</returns>
         public static ushort Calculate(Crc16Method method, byte[] buffer, int length) => method switch {
             Crc16Method.Modbus => CalculateModbus(buffer, length),
             Crc16Method.CCITTxFFFF => CalculateCCITT(buffer, length),
@@ -27,45 +35,107 @@ namespace Loudenvier.Utils
             _ => CalculateModbus(buffer, length),
         };
 
-        public static ushort Calculate(Crc16Method method, string Buffer, int length, Encoding? encoding = null) {
-            if (string.IsNullOrEmpty(Buffer) || length == 0)
+        static readonly Lazy<Encoding> DefaultEncoding = new(() => Encoding.ASCII);
+
+        /// <summary>
+        /// Calculates the CRC-16 of the provided <paramref name="text"/>, up to the specified <paramref name="length"/>  
+        /// by using the specified <paramref name="encoding"/> to convert from <see cref="char"/> to <see cref="byte"/>,
+        /// employing a specific CRC-16 industry standard <paramref name="method"/>.
+        /// </summary>  
+        /// <remarks>The <paramref name="length"/> is relative to the characters in the <paramref name="text"/> string
+        /// and do not take into account the encoding.</remarks>
+        /// <param name="method">The CRC-16 industry standard to employ for calculation</param>
+        /// <param name="text">The text to use for calculation</param>
+        /// <param name="length">The length of data in the <paramref name="text"/> to include in the calculation</param>
+        /// <param name="encoding">The character encoding to use to convert the string into bytes</param>
+        /// <returns>The computed CRC-16</returns>
+        public static ushort Calculate(Crc16Method method, string text, int length, Encoding? encoding = null) {
+            if (string.IsNullOrEmpty(text) || length == 0)
                 return 0;
-            encoding ??= Encoding.GetEncoding("us-ascii"); // ASCIIEncoding.ASCII;
-            var buffer = encoding.GetBytes(Buffer);
-            return Calculate(method, buffer, length);
+            encoding ??= DefaultEncoding.Value;
+            var buffer = encoding.GetBytes(length < text.Length ? text[..length] : text);
+            return Calculate(method, buffer, buffer.Length);
         }
 
-        public static ushort CalculateModbus(string Buffer, int length, Encoding? encoding = null)
-            => Calculate(Crc16Method.Modbus, Buffer, length, encoding);
-        public static ushort CalculateCCITTxFFFF(string Buffer, int length, Encoding? encoding = null)
-            => Calculate(Crc16Method.CCITTxFFFF, Buffer, length, encoding);
-        public static ushort CalculateKermit(string Buffer, int length, Encoding? encoding = null)
-            => Calculate(Crc16Method.Kermit, Buffer, length, encoding);
+        /// <summary>
+        /// Calculates the MODBUS CRC-16 of the provided <paramref name="text"/>, up to the specified <paramref name="length"/>  
+        /// by using the specified <paramref name="encoding"/> to convert from <see cref="char"/> to <see cref="byte"/>.
+        /// </summary>  
+        /// <remarks>The <paramref name="length"/> is relative to the characters in the <paramref name="text"/> string
+        /// and do not take into account the encoding.</remarks>
+        /// <param name="text">The text to use for calculation</param>
+        /// <param name="length">The length of data in the <paramref name="text"/> to include in the calculation</param>
+        /// <param name="encoding">The character encoding to use to convert the string into bytes</param>
+        /// <returns>The computed MODBUS CRC-16</returns>
+        public static ushort CalculateModbus(string text, int length, Encoding? encoding = null)
+            => Calculate(Crc16Method.Modbus, text, length, encoding);
+        /// <summary>
+        /// Calculates the CCITTxFFFF CRC-16 of the provided <paramref name="text"/>, up to the specified <paramref name="length"/>  
+        /// by using the specified <paramref name="encoding"/> to convert from <see cref="char"/> to <see cref="byte"/>.
+        /// </summary>  
+        /// <remarks>The <paramref name="length"/> is relative to the characters in the <paramref name="text"/> string
+        /// and do not take into account the encoding.</remarks>
+        /// <param name="text">The text to use for calculation</param>
+        /// <param name="length">The length of data in the <paramref name="text"/> to include in the calculation</param>
+        /// <param name="encoding">The character encoding to use to convert the string into bytes</param>
+        /// <returns>The computed CCITTxFFFF CRC-16</returns>
+        public static ushort CalculateCCITTxFFFF(string text, int length, Encoding? encoding = null)
+            => Calculate(Crc16Method.CCITTxFFFF, text, length, encoding);
+        /// <summary>
+        /// Calculates the KERMIT/CCITT CRC-16 of the provided <paramref name="text"/>, up to the specified <paramref name="length"/>  
+        /// by using the specified <paramref name="encoding"/> to convert from <see cref="char"/> to <see cref="byte"/>.
+        /// </summary>  
+        /// <remarks>The <paramref name="length"/> is relative to the characters in the <paramref name="text"/> string
+        /// and do not take into account the encoding.</remarks>
+        /// <param name="text">The text to use for calculation</param>
+        /// <param name="length">The length of data in the <paramref name="text"/> to include in the calculation</param>
+        /// <param name="encoding">The character encoding to use to convert the string into bytes</param>
+        /// <returns>The computed KERMIT/CCITT CRC-16</returns>
+        public static ushort CalculateKermit(string text, int length, Encoding? encoding = null)
+            => Calculate(Crc16Method.Kermit, text, length, encoding);
 
 
-        public static ushort CalculateModbus(byte[] bytes, int ui_length) {
+        /// <summary>
+        /// Calculates the MODBUS CRC-16 of the array of <paramref name="bytes"/> up to the specified <paramref name="length"/>
+        /// </summary>
+        /// <param name="bytes">An array of 8-bit unsigned integers</param>
+        /// <param name="length">The length of data in the array of <paramref name="bytes"/> to include in the calculation</param>
+        /// <returns>The computed MODBUS CRC-16</returns>
+        public static ushort CalculateModbus(byte[] bytes, int length) {
             ushort Crc = 65535;
             ushort x;
-            for (ushort i = 0; i < ui_length; i++) {
+            for (ushort i = 0; i < length; i++) {
                 x = (ushort)(Crc ^ bytes[i]);
                 Crc = (ushort)((Crc >> 8) ^ crc_table_modbus[x & 0x00FF]);
             }
             return Crc;
         }
 
-        public static ushort CalculateCCITT(byte[] buffer, int ui_length) {
+        /// <summary>
+        /// Calculates the CCITT CRC-16 of the array of <paramref name="bytes"/> up to the specified <paramref name="length"/>
+        /// </summary>
+        /// <param name="bytes">An array of 8-bit unsigned integers</param>
+        /// <param name="length">The length of data in the array of <paramref name="bytes"/> to include in the calculation</param>
+        /// <returns>The computed CCITT CRC-16</returns>
+        public static ushort CalculateCCITT(byte[] buffer, int length) {
             var table = tableCCITT.Value;
             ushort crc = 0xffff;
-            for (int i = 0; i < ui_length; ++i) {
+            for (int i = 0; i < length; ++i) {
                 crc = (ushort)((crc << 8) ^ table[((crc >> 8) ^ (0xff & buffer[i]))]);
             }
             return crc;
         }
 
-        public static ushort CalculateKermit(byte[] bytes, int ui_length) {
+        /// <summary>
+        /// Calculates the KERMIT CRC-16 of the array of <paramref name="bytes"/> up to the specified <paramref name="length"/>
+        /// </summary>
+        /// <param name="bytes">An array of 8-bit unsigned integers</param>
+        /// <param name="length">The length of data in the array of <paramref name="bytes"/> to include in the calculation</param>
+        /// <returns>The computed KERMIT CRC-16</returns>
+        public static ushort CalculateKermit(byte[] bytes, int length) {
             var table = tableKermit.Value;
             ushort crc = 0;
-            for (int i = 0; i < ui_length; ++i) {
+            for (int i = 0; i < length; ++i) {
                 byte index = (byte)(crc ^ bytes[i]);
                 crc = (ushort)((crc >> 8) ^ table[index]);
             }

@@ -3,6 +3,10 @@ using System.Collections.Generic;
 
 namespace Loudenvier.Utils
 {
+    /// <summary>
+    /// Extension methods to format date and time to a few common scenarios and to human-friendly format
+    /// like <c>8h 30min</c> instead of <c>08:30:00</c> (<see cref="TimeFormattingExtensions.ToFriendlyString(TimeSpan)"/>).
+    /// </summary>
     public static class TimeFormattingExtensions {
 
         /// <summary>Converts the <see cref="TimeSpan"/> into a string in the format HH:mm (where HH can be greater than 24) 

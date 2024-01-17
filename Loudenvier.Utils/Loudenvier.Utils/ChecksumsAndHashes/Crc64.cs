@@ -22,7 +22,7 @@ namespace Loudenvier.Utils
         public Crc64(ulong polynomial): this(polynomial, DefaultSeed) { }
 
         /// <summary>
-        /// /// Instantiates a new <see cref="Crc64"/> object with the given <paramref name="polynomial"/> and the given <paramref name="seed"/>
+        /// Instantiates a new <see cref="Crc64"/> object with the given <paramref name="polynomial"/> and the given <paramref name="seed"/>
         /// </summary>
         /// <param name="polynomial">The polynomial to use for CRC64 calculations</param>
         /// <param name="seed">The seed to use for CRC64 calculations</param>
