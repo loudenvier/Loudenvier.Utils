@@ -1,19 +1,22 @@
+using static System.Net.Mime.MediaTypeNames;
+using System.Text.RegularExpressions;
+
 namespace Loudenvier.Utils.Tests
 {
-    public class IsOneOfExtensionsTests
+    public class InExtensionsTests
     {
 
         enum Test { Value1, Value2, Value3, Value4 }
 
         [Fact]
-        public void TestIsOneOfWithEnum_True() => Assert.True(Test.Value1.IsOneOf(Test.Value3, Test.Value1));
+        public void TestIsOneOfWithEnum_True() => Assert.True(Test.Value1.In(Test.Value3, Test.Value1));
         [Fact]
-        public void TestIsOneOfWithEnum_False() => Assert.False(Test.Value1.IsOneOf(Test.Value3, Test.Value2));
+        public void TestIsOneOfWithEnum_False() => Assert.False(Test.Value1.In(Test.Value3, Test.Value2));
 
         [Fact]
-        public void TestIsOneOfWithInt_True() => Assert.True(1.IsOneOf(10, 20, 40, 1));
+        public void TestIsOneOfWithInt_True() => Assert.True(1.In(10, 20, 40, 1));
         [Fact]
-        public void TestIsOneOfWithInt_False() => Assert.False(1.IsOneOf(10, 20, 40, 12));
+        public void TestIsOneOfWithInt_False() => Assert.False(1.In(10, 20, 40, 12));
 
         record TestRec(string Name, int Age);
         [Fact]
@@ -21,14 +24,14 @@ namespace Loudenvier.Utils.Tests
             var rec1 = new TestRec("Felipe", 48);
             var rec2 = new TestRec("Julio", 46);
             var rec3 = new TestRec("Marcelle", 53);
-            Assert.True(new TestRec("Felipe", 48).IsOneOf(rec3, rec2, rec1));
+            Assert.True(new TestRec("Felipe", 48).In(rec3, rec2, rec1));
         }
         [Fact]
         public void TestIsOneOfWithRecord_False() {
             var rec1 = new TestRec("Felipe", 48);
             var rec2 = new TestRec("Julio", 46);
             var rec3 = new TestRec("Marcelle", 53);
-            Assert.False(new TestRec("Felipe", 50).IsOneOf(rec3, rec2, rec1));
+            Assert.False(new TestRec("Felipe", 50).In(rec3, rec2, rec1));
         }
 
         class TestClass {
@@ -44,14 +47,14 @@ namespace Loudenvier.Utils.Tests
             var item1 = new TestClass("Felipe", 48);
             var item2 = new TestClass("Julio", 46);
             var item3 = new TestClass("Marcelle", 53);
-            Assert.True(item1.IsOneOf(item3, item2, item1));
+            Assert.True(item1.In(item3, item2, item1));
         }
         [Fact]
         public void TestIsOneOfWithClassUsesReference_False() {
             var item1 = new TestClass("Felipe", 48);
             var item2 = new TestClass("Julio", 46);
             var item3 = new TestClass("Marcelle", 53);
-            Assert.False(new TestClass("Felipe", 48).IsOneOf(item3, item2, item1));
+            Assert.False(new TestClass("Felipe", 48).In(item3, item2, item1));
         }
 
         class TestClassWithEquals : TestClass, IEquatable<TestClassWithEquals?>
@@ -76,14 +79,14 @@ namespace Loudenvier.Utils.Tests
             var item1 = new TestClassWithEquals("Felipe", 48);
             var item2 = new TestClassWithEquals("Julio", 46);
             var item3 = new TestClassWithEquals("Marcelle", 53);
-            Assert.True(new TestClassWithEquals("Felipe", 48).IsOneOf(item3, item2, item1));
+            Assert.True(new TestClassWithEquals("Felipe", 48).In(item3, item2, item1));
         }
         [Fact]
         public void TestIsOneOfWithClassUsesEqualsIfOverriden_False() {
             var item1 = new TestClassWithEquals("Felipe", 48);
             var item2 = new TestClassWithEquals("Julio", 46);
             var item3 = new TestClassWithEquals("Marcelle", 53);
-            Assert.False(new TestClassWithEquals("Felipe", 47).IsOneOf(item3, item2, item1));
+            Assert.False(new TestClassWithEquals("Felipe", 47).In(item3, item2, item1));
         }
     }
 
@@ -176,5 +179,16 @@ namespace Loudenvier.Utils.Tests
             Assert.Equal(value_in_big_endian[0..8], result);
         }
 
+    }
+
+    public class RegexExtensionsTests {
+        [Fact]
+        public void MatchColletionAsStringsWorks() {
+            var matches = Regex.Matches("First Second Third", @"\b[A-Za-z-']+\b");
+            var strings = matches.AsStrings();
+            Assert.Equal("First", strings.ElementAt(0));
+            Assert.Equal("Second", strings.ElementAt(1));
+            Assert.Equal("Third", strings.ElementAt(2));
+        }
     }
 }
