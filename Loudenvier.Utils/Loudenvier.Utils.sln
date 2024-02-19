@@ -7,9 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Loudenvier.Utils", "Loudenv
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Loudenvier.Utils.Networking", "Loudenvier.Utils.Networking\Loudenvier.Utils.Networking.csproj", "{E77BDECC-D925-4FBB-875D-092625E02BBB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Loudenvier.Utils.Sql", "Loudenvier.Utils.Sql\Loudenvier.Utils.Sql.csproj", "{C22E8405-657D-43CA-8941-B2B496A6C1B3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Loudenvier.Utils.Sql", "Loudenvier.Utils.Sql\Loudenvier.Utils.Sql.csproj", "{C22E8405-657D-43CA-8941-B2B496A6C1B3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Loudenvier.Utils.Tests", "Loudenvier.Utils.Tests\Loudenvier.Utils.Tests.csproj", "{53858060-EF39-4942-A189-71406718B22E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Loudenvier.Utils.Tests", "Loudenvier.Utils.Tests\Loudenvier.Utils.Tests.csproj", "{53858060-EF39-4942-A189-71406718B22E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Loudenvier.Utils.WebForms", "Loudenvier.Utils.WebForms\Loudenvier.Utils.WebForms.csproj", "{AE8B6942-0A15-4283-8336-6824752E11C9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{53858060-EF39-4942-A189-71406718B22E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{53858060-EF39-4942-A189-71406718B22E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{53858060-EF39-4942-A189-71406718B22E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE8B6942-0A15-4283-8336-6824752E11C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE8B6942-0A15-4283-8336-6824752E11C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE8B6942-0A15-4283-8336-6824752E11C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE8B6942-0A15-4283-8336-6824752E11C9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
