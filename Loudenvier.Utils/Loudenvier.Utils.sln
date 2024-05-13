@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Loudenvier.Utils.Tests", "L
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Loudenvier.Utils.WebForms", "Loudenvier.Utils.WebForms\Loudenvier.Utils.WebForms.csproj", "{AE8B6942-0A15-4283-8336-6824752E11C9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Loudenvier.Utils.Json", "Loudenvier.Utils.Json\Loudenvier.Utils.Json.csproj", "{6A383674-1506-4327-B471-A68C7A8C698A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{AE8B6942-0A15-4283-8336-6824752E11C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AE8B6942-0A15-4283-8336-6824752E11C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AE8B6942-0A15-4283-8336-6824752E11C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A383674-1506-4327-B471-A68C7A8C698A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A383674-1506-4327-B471-A68C7A8C698A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A383674-1506-4327-B471-A68C7A8C698A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A383674-1506-4327-B471-A68C7A8C698A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
