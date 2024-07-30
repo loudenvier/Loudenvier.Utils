@@ -37,8 +37,7 @@ namespace Loudenvier.Utils
             return s;
         }
             
-
-
+        public static string ToString(this bool v, string yes, string no) => v ? yes : no;  
 
     }
 }
