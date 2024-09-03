@@ -9,6 +9,6 @@ namespace Loudenvier.Utils
         public const int PRIMARY_KEY_VIOLATION = 2627;
         public const int UNIQUE_CONSTRAINT_VIOLATION = 2601;
 
-        public static readonly int[] DuplicateKeyViolations = { PRIMARY_KEY_VIOLATION, UNIQUE_CONSTRAINT_VIOLATION };
+        public static readonly int[] DuplicateKeyViolations = [PRIMARY_KEY_VIOLATION, UNIQUE_CONSTRAINT_VIOLATION];
     }
 }

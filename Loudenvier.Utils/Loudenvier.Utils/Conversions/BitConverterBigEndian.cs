@@ -39,8 +39,7 @@ namespace System {
         public static byte[] GetBytes(bool value) {
             const byte one = 1;
             const byte zero = 0;
-            byte[] r = new byte[1];
-            r[0] = value ? one : zero;
+            byte[] r = [value ? one : zero];
             return r;
         }
 
@@ -65,14 +64,10 @@ namespace System {
         /// <returns>An array of bytes with length 2.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static byte[] GetBytes(short value) {
-            byte[] bytes = new byte[2];
+            byte[] bytes = [(byte)(value >> 8), (byte)value];
+
 #if BIGENDIAN
-            fixed (byte* b = bytes)
-                *((short*)b) = value;
-            return bytes;
 #else
-            bytes[0] = (byte)(value >> 8);
-            bytes[1] = (byte)value;
             return bytes;
 #endif
         }
@@ -86,16 +81,7 @@ namespace System {
         /// <returns>An array of bytes with length 4.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static byte[] GetBytes(int value) {
-            byte[] bytes = new byte[4];
-#if BIGENDIAN
-            fixed (byte* b = bytes)
-                *((int*)b) = value;
-            return bytes;
-#endif
-            bytes[0] = (byte)(value >> 24);
-            bytes[1] = (byte)(value >> 16);
-            bytes[2] = (byte)(value >> 8);
-            bytes[3] = (byte)value;
+            byte[] bytes = [(byte)(value >> 24), (byte)(value >> 16), (byte)(value >> 8), (byte)value];
             return bytes;
         }
 
@@ -108,20 +94,17 @@ namespace System {
         /// <returns>An array of bytes with length 8.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static byte[] GetBytes(long value) {
-            byte[] bytes = new byte[8];
-#if BIGENDIAN
-            fixed (byte* b = bytes)
-                *((long*)b) = value;
-            return bytes;
-#endif
-            bytes[0] = (byte)(value >> 56);
-            bytes[1] = (byte)(value >> 48);
-            bytes[2] = (byte)(value >> 40);
-            bytes[3] = (byte)(value >> 32);
-            bytes[4] = (byte)(value >> 24);
-            bytes[5] = (byte)(value >> 16);
-            bytes[6] = (byte)(value >> 8);
-            bytes[7] = (byte)value;
+            byte[] bytes =
+            [
+                (byte)(value >> 56),
+                (byte)(value >> 48),
+                (byte)(value >> 40),
+                (byte)(value >> 32),
+                (byte)(value >> 24),
+                (byte)(value >> 16),
+                (byte)(value >> 8),
+                (byte)value,
+            ];
             return bytes;
         }
 

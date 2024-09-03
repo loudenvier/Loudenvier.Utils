@@ -38,7 +38,7 @@ namespace Loudenvier.Utils
             throw new FormatException($"The date [{date}] didn't conform to any of the provided formats: {string.Join(", ", formats)}");
         }
 
-        static readonly int[] weights = { 60 * 60 * 1000, 60 * 1000, 1000, 1 };
+        static readonly int[] weights = [60 * 60 * 1000, 60 * 1000, 1000, 1];
         /// <summary> Parses a string to a TimeSpan value allowing natural language or any value in each component (e.g.: 32h20min or 32:20:0 </summary>
         /// <param name="s">String to transform into TimeSpan</param>
         /// <param name="languageCode">An option language code to derive parsing patterns from (defaults to "pt" - portuguese)</param>

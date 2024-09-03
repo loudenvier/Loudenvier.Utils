@@ -39,8 +39,7 @@ namespace System {
         public static byte[] GetBytes(bool value) {
             const byte one = 1;
             const byte zero = 0;
-            byte[] r = new byte[1];
-            r[0] = value ? one : zero;
+            byte[] r = [value ? one : zero];
             return r;
         }
 

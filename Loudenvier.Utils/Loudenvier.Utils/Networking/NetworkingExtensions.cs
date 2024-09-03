@@ -130,7 +130,7 @@ namespace Loudenvier.Utils
                    ?? addrs.FirstOrDefault();
         }
 
-        static readonly string[] prefixes = { @"https://", @"http://" };
+        static readonly string[] prefixes = [@"https://", @"http://"];
 
         /// <summary>Removes the "http://" or "https://" part of a URL (if present).</summary>
         /// <param name="url">The string representing an URL with a possible http(s) part removed from it</param>
