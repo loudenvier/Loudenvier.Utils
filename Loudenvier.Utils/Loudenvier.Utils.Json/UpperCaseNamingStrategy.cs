@@ -74,6 +74,6 @@ namespace Newtonsoft.Json.Serialization
         /// </summary>
         /// <param name="name">The property name to resolve.</param>
         /// <returns>The resolved property name in upper case.</returns>
-        protected override string ResolvePropertyName(string name) => name?.ToUpperInvariant();
+        protected override string ResolvePropertyName(string name) => name.ToUpperInvariant();
     }
 }
