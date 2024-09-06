@@ -1,8 +1,6 @@
 # Loudenvier.Utils
  ![](https://img.shields.io/nuget/vpre/Loudenvier.Utils) ![](https://img.shields.io/nuget/dt/Loudenvier.Utils)
 
-# Loudenvier.Utils
-
 This is a collection of utilities I've been using for ages in my own C# programming. Some of it is great, some of it I'm ashamed of, most of it was written in the witching hours of the night, when ghosts roam and software crashes, but all of it is very useful (to me). Whenever I started a new project I ended up referencing "my" _utils_ collection so it was only natural to turn it into a (few) nuget(s) package(s), for easier deployment and referencing, and then upload it to github for version control (_actually it's been the other way around: organize, clean up and publish it to github and then publish to nuget_). As can be seen, _this is a work in progress!_
 
 The code does not aim to be very smart, it aims to solve common and simple problems, apease to my tastes (which will likely differ from yours), to make some repetitive tasks simple and avoid common errors and pitfalls, and ultimately help me not (re)inventing the wheel time and time again. 
