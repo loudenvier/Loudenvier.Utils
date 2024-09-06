@@ -13,4 +13,4 @@ I'm profusely thankful to [PolySharp](https://github.com/Sergio0694/PolySharp) f
 
 ## Documentation
 
-I'm in the process of documenting everything using the amazing [docfx](https://github.com/dotnet/docfx) project. It takes time to properly add the needed XML comments for documentation, but I'm activelly working on it (as an added bonus Intellisense is much more useful now). Once documentation is done, it will be served from github pages, and ~~only then the nugets will get published~~ for now only the basic project is on nuget (Loudenvier.Utils, which have more XML Documentation than the others).
+I'm in the process of documenting everything using the amazing [docfx](https://github.com/dotnet/docfx) project. It takes time to properly add the needed XML comments for documentation, but I'm activelly working on it (as an added bonus Intellisense is much more useful now). Once documentation is done, it will be served from github pages. ~~and only then the nugets will get published~~ I'm in the process of publishing the projects in nuget.org (for now only Loudenvier.Utils.csproj is published as its documentation process is ahead than the others)
