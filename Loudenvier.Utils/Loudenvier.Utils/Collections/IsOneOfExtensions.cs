@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace Loudenvier.Utils
 {
@@ -12,8 +13,10 @@ namespace Loudenvier.Utils
         /// <param name="item">The item to check.</param>
         /// <param name="items">A list of items to check.</param>
         /// <returns><c>true</c> if the item exists in the list of items passed.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]  
         public static bool In<T>(this T item, params T[] items) => items.Contains(item);
-
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool NotIn<T>(this T item, params T[] items) => !items.Contains(item);
     }
 }

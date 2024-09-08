@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 
 namespace Loudenvier.Utils
 
@@ -127,6 +128,24 @@ namespace Loudenvier.Utils
                 -1 => string.Empty,
                 _ => s[(linePos + 1)..]
             };
+        }
+
+        /// <summary>
+        /// Strips all occurrences of any <paramref name="chars"/> inside the string <paramref name="s"/>.
+        /// The method is null safe and returns an empty string if provided with a null string.
+        /// </summary>
+        /// <param name="s">The string being stripped of chars.</param>
+        /// <param name="chars">The characters to strip from the string.</param>
+        /// <returns>A string stripped of the provided characters.</returns>
+        public static string StripChars(this string? s, params char[] chars) {
+            if (s is null) return string.Empty; 
+            if (chars.Length == 0) return s;
+            var sb = new StringBuilder(s.Length);
+            foreach(var c in s) {
+                if (!c.In(chars))
+                    sb.Append(c);
+            }
+            return sb.ToString();
         }
 
 

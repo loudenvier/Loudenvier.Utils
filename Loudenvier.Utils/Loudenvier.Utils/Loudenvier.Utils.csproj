@@ -5,7 +5,7 @@
       <LangVersion>latest</LangVersion>
       <Nullable>enable</Nullable>
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-      <VersionPrefix>0.1.0</VersionPrefix>
+      <VersionPrefix>0.1.1</VersionPrefix>
       <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
       <Title>Loudenvier.Utils</Title>
       <Description>A collection of utilities I've been using for ages in my own C# programming ranging from basic string manipulations and date time conversions to endianness translations and tcp/ip facilities (and much more)</Description>
