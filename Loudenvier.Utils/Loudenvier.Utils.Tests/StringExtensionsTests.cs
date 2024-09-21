@@ -44,5 +44,67 @@
             var stripped = s.StripChars();
             Assert.Same(s, stripped);
         }
+
+        [Fact]
+        public void SplitOnUpperCaseWorksAsExpectedWithDefaultOption() {
+            var parts = "FelipeRochaMachado".SplitOnUpperOrSeparator();
+            Assert.Equal(["Felipe", "Rocha", "Machado"], parts);
+        }
+        [Fact]
+        public void SplitOnSeparatorWorksAsExpectedWithDefaultOption() {
+            var parts = "felipe-rocha-machado".SplitOnUpperOrSeparator('-');
+            Assert.Equal(["felipe", "rocha", "machado"], parts);
+        }
+        [Fact]
+        public void SplitOnUpperCaseKeepsSequencesOfUpperCaseTogether() {
+            var parts = "FelipeRochaMACHADO".SplitOnUpperOrSeparator('-');
+            Assert.Equal(["Felipe", "Rocha", "MACHADO"], parts);
+        }
+        [Fact]
+        public void SplitOnSeparatorsRemoveRepeatingSeparators() {
+            var parts = "Felipe--Rocha---MACHADO".SplitOnUpperOrSeparator('-');
+            Assert.Equal(["Felipe", "Rocha", "MACHADO"], parts);
+        }
+        [Fact]
+        public void SplitOnUpperCaseKeepsSequencesWithFollowingLowerCasesTogether() {
+            var parts = "Felipe---RochaMACHado".SplitOnUpperOrSeparator('-');
+            Assert.Equal(["Felipe", "Rocha", "MACHado"], parts);
+        }
+        [Fact]
+        public void SplitOnSeparatorsAlsoRemovesStartingSeparator() {
+            var parts = "-FelipeMAChado".SplitOnUpperOrSeparator('-');
+            Assert.Equal(["Felipe", "MAChado"], parts);
+        }
+        [Fact]
+        public void SplitOnSeparatorsAlsoRemovesStartingSeparators() {
+            var parts = "---FelipeMAChado".SplitOnUpperOrSeparator('-');
+            Assert.Equal(["Felipe", "MAChado"], parts);
+        }
+        [Fact]
+        public void SplitOnSeparatorsAlsoRemovesTrailingSeparators() {
+            var parts = "FelipeMAChado---".SplitOnUpperOrSeparator('-');
+            Assert.Equal(["Felipe", "MAChado"], parts);
+        }
+        [Fact]
+        public void SplitOnSeparatorsKeepsSeparatorsIfToldTo() {
+            var parts = "felipe--rocha-machado".SplitOnUpperOrSeparator(keepSeparators: true, '-');
+            Assert.Equal(["felipe", "--", "rocha", "-", "machado"], parts);
+        }
+        [Fact]
+        public void SplitOnSeparatorsKeepsSeparatorsIfToldTo2() {
+            var parts = "---felipe--rocha----machado".SplitOnUpperOrSeparator(keepSeparators: true, '-');
+            Assert.Equal(["---","felipe", "--", "rocha", "----", "machado"], parts);
+        }
+        [Fact]
+        public void SplitOnSeparatorsKeepsTrailingSeparators() {
+            var parts = "felipe-rocha-machado---".SplitOnUpperOrSeparator(keepSeparators: true, '-');
+            Assert.Equal(["felipe", "-", "rocha", "-", "machado", "---"], parts);
+        }
+        [Fact]
+        public void SplitOnSeparatorsKeepsSingleTrailingSeparator() {
+            var parts = "felipe-rocha-machado-".SplitOnUpperOrSeparator(keepSeparators: true, '-');
+            Assert.Equal(["felipe", "-", "rocha", "-", "machado", "-"], parts);
+        }
+
     }
 }

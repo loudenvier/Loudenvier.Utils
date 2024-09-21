@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Loudenvier.Utils
@@ -148,6 +150,66 @@ namespace Loudenvier.Utils
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Capitalizes the first (and only the first) letter of the given string <paramref name="s"/>.
+        /// This call is null safe and will return an empty string if provided with a null or empty string.
+        /// </summary>
+        /// <remarks>This method is very fast and has one less allocation than most versions out there!
+        /// Although this code is my own it is identical to what's being discussed here: 
+        /// https://stackoverflow.com/questions/4135317/make-first-letter-of-a-string-upper-case-with-maximum-performance
+        /// </remarks>
+        /// <param name="s">The string to be capitalized.</param>
+        /// <returns>The capitalized string.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]  
+        public static string Capitalize(this string s) {
+            if (s is null || s.Length == 0) 
+                return string.Empty;
+            var array = s.ToCharArray();
+            array[0] = char.ToUpperInvariant(array[0]);
+            return new string(array);
+        }
+        
+        public static IEnumerable<string> SplitOnUpperOrSeparator(this string s, params char[] seps)
+            => SplitOnUpperOrSeparator(s, false, seps);
 
+        public static IEnumerable<string> SplitOnUpperOrSeparator(this string s, bool keepSeparators, params char[] seps) {
+            bool isUpper(char c) => char.IsUpper(c);
+            bool isSep(char c) => seps.Length > 0 && c.In(seps);
+
+            var chars = s.ToCharArray();
+            List<string> parts = [];
+            int l = 0;
+            for (int i = 1; i < chars.Length; i++) {
+                void advance() => l = i;
+                var ch = chars[i];
+                var prev = s[i - 1];
+                if (isUpper(ch) && isUpper(prev))
+                    // keeps ALLcaps together
+                    continue;
+                if (isSep(ch) && isSep(prev)) {
+                    // ignores repeating separators ---
+                    if (!keepSeparators) 
+                        advance();
+                    continue;
+                }
+                if (isSep(ch) && !isSep(prev)) {
+                    // reached a new separator: found a part!
+                    parts.Add(new string(chars, l, i - l));
+                    advance();
+                } else if (!isSep(ch) && isSep(prev)) {
+                    // starting a string after a sep
+                    if (keepSeparators)
+                        parts.Add(new string(chars, l, i - l));
+                    advance();
+                } else if (isUpper(ch) && !isUpper(prev)) {
+                    // reached a new uppercase: found a part!
+                    parts.Add(new string(chars, l, i - l));
+                    advance();
+                } 
+            }
+            if (l < chars.Length && (keepSeparators || !isSep(chars[l])))
+                parts.Add(new string(chars, l, chars.Length - l));
+            return parts;
+        }
     }
 }

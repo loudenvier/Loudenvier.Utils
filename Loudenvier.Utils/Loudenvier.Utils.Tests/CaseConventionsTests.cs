@@ -19,6 +19,10 @@ namespace Loudenvier.Utils.Tests
         [Fact]
         public void ToPascalCaseWorks_WithComplexCase() =>
             Assert.Equal("PascalCaseTextCommand", CaseConvention.Pascal.ApplyCase("pascal-Case---text-----command"));
+        [Fact]
+        public void ToPascalCaseWorks_DoesNotSeparateRepeatedCapitals() =>
+            Assert.Equal("PascalCaseTextCOMMAND", CaseConvention.Pascal.ApplyCase("pascal-Case---text-----COMMAND"));
+
 
         [Fact]
         public void ToKebabCase_WorksWithBasicCase() =>
@@ -59,5 +63,36 @@ namespace Loudenvier.Utils.Tests
         [Fact]
         public void ApplyUnknownCaseConventionThrowsArgumentOutOfRangeException() =>
             Assert.Throws<ArgumentOutOfRangeException>(() => ((CaseConvention)1000).ApplyCase("ThrowsException"));
+
+        [Fact]
+        public void ToCamelSnakeCase_WorksWithBasicCase() =>
+            Assert.Equal("camel_Case", CaseConvention.CamelSnake.ApplyCase("CamelCase"));
+        [Fact]
+        public void ToCamelSnakeCase_DoNotSeparateRepeatedCapitals() =>
+            Assert.Equal("camel_Case_ALL", CaseConvention.CamelSnake.ApplyCase("CamelCaseALL"));
+        [Fact]
+        public void ToCamelSnakeCase_DontRemoveDashesInOriginalString() =>
+            Assert.Equal("__Camel___Case", CaseConvention.CamelSnake.ApplyCase("__Camel___Case"));
+
+        [Fact]
+        public void ToPascalSnakeCase_WorksWithBasicCase() =>
+            Assert.Equal("Pascal_Case", CaseConvention.PascalSnake.ApplyCase("PascalCase"));
+        [Fact]
+        public void ToPascalSnakeCase_DoNotSeparateRepeatedCapitals() =>
+            Assert.Equal("Pascal_Case_ALL", CaseConvention.PascalSnake.ApplyCase("pascalCaseALL"));
+        [Fact]
+        public void ToPascalSnakeCase_DontRemoveDashesInOriginalString() =>
+            Assert.Equal("__Pascal___Case", CaseConvention.PascalSnake.ApplyCase("__pascal___Case"));
+
+        [Fact]
+        public void ToHTTPHeaderCase_WorksWithBasicCase() =>
+            Assert.Equal("HTTP-Header-Case", CaseConvention.HTTPHeader.ApplyCase("HTTP-HeaderCase"));
+        [Fact]
+        public void ToHTTPHeaderCase_DoNotSeparateRepeatedCapitals() =>
+            Assert.Equal("HTTP-Header-Case-ALL", CaseConvention.HTTPHeader.ApplyCase("HTTP-header-CaseALL"));
+        [Fact]
+        public void ToHTTPHeaderCase_DontRemoveDashesInOriginalString() =>
+            Assert.Equal("--HTTP-Header---Case", CaseConvention.HTTPHeader.ApplyCase("--HTTP-Header---Case"));
+
     }
 }
