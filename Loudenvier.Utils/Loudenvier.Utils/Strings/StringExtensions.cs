@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Security.Permissions;
 using System.Text;
 
 namespace Loudenvier.Utils
@@ -211,5 +213,48 @@ namespace Loudenvier.Utils
                 parts.Add(new string(chars, l, chars.Length - l));
             return parts;
         }
+#if NETSTANDARD2_1_OR_GREATER
+    // No need for the following "Replaces" because they're already baked-in and faster
+#elif NET6_0_OR_GREATER
+    // No need for the following "Replaces" because they're already baked-in and faster
+#else
+        public static string Replace(this string searchSpace, string oldValue, string newValue, bool ignoreCase) 
+            => Replace(searchSpace, oldValue, newValue, options: ignoreCase ? CompareOptions.OrdinalIgnoreCase : CompareOptions.None);
+
+        // Lifted and backported from .NET String.Manipulation.cs source code
+        public static string Replace(this string searchSpace, string oldValue, string newValue, 
+            CompareInfo? compareInfo = null, CompareOptions? options = null) {
+            if (string.IsNullOrEmpty(oldValue)) 
+                return searchSpace;
+            compareInfo ??= CultureInfo.InvariantCulture.CompareInfo;
+            options ??= CompareOptions.OrdinalIgnoreCase;
+
+            var result = new StringBuilder(searchSpace.Length);
+            bool hasDoneAnyReplacements = false;
+            int pos = 0;
+            while (pos < searchSpace.Length) {
+                var index = compareInfo.IndexOf(searchSpace, oldValue, pos, options.Value);
+                if (index < 0) 
+                    break;
+
+                // append the unmodified portion of search space
+                result.Append(searchSpace[pos..index]);
+                // append the replacement
+                result.Append(newValue);
+
+                pos = index + oldValue.Length;
+                hasDoneAnyReplacements = true;
+            }
+
+            // if we didn't replace anything returns the original string
+            if (!hasDoneAnyReplacements)
+                return searchSpace;
+
+            // Append what remains of the search space, then allocate the new string.
+            if (pos < searchSpace.Length)
+                result.Append(searchSpace[pos..]);
+            return result.ToString();
+        }
+#endif
     }
 }

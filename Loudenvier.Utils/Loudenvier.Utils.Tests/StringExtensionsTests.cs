@@ -105,4 +105,31 @@ public class StringExtensionsTests
         var parts = "felipe-rocha-machado-".SplitOnUpperOrSeparator(keepSeparators: true, '-');
         Assert.Equal(["felipe", "-", "rocha", "-", "machado", "-"], parts);
     }
+
+    [Fact]
+    public void ReplaceCanIgnoreCase() {
+        var original = "feLIpe";
+        Assert.Equal("felipe", original.Replace("li", "li", options: System.Globalization.CompareOptions.IgnoreCase));
+    }
+    [Fact]
+    public void ReplaceReturnsOriginalIfNoReplacementOcurrs() {
+        var original = "feLIpe";
+        Assert.Same(original, original.Replace("xy", "li", options: System.Globalization.CompareOptions.IgnoreCase));
+    }
+    [Fact]
+    public void ReplaceWorksWhenReplacementIsAtTheStart() {
+        var original = "feLIpe";
+        Assert.Equal("FeLIpe", original.Replace("fe", "Fe", options: System.Globalization.CompareOptions.IgnoreCase));
+    }
+    [Fact]
+    public void ReplaceWorksWhenReplacementIsAtTheEnd() {
+        var original = "feLIpe";
+        Assert.Equal("feLIPE", original.Replace("pe", "PE", options: System.Globalization.CompareOptions.IgnoreCase));
+    }
+    [Fact]
+    public void ReplaceWillReplaceAllOccurrances() {
+        var original = "Felipe fErnando FElix";
+        Assert.Equal("Felipe Fernando Felix", original.Replace("fe", "Fe", options: System.Globalization.CompareOptions.IgnoreCase));
+    }
+
 }
