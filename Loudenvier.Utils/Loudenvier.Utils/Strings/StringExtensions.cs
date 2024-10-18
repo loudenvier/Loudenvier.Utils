@@ -42,6 +42,15 @@ namespace Loudenvier.Utils
             return s;
         }
             
+        /// <summary>
+        /// Converts the boolean value <paramref name="v"/> to the provided string representations of
+        /// <paramref name="yes"/> if 'v' is true or <paramref name="no"/> if v is false.
+        /// </summary>
+        /// <param name="v">The boolean value to be converted to string.</param>
+        /// <param name="yes">The string value in case <paramref name="v"/> is <see cref="true"/>.</param>
+        /// <param name="no">The string value in case <paramref name="v"/> is <see cref="false"/>.</param>
+        /// <returns>The <see cref="string"/> represented by <paramref name="yes"/> in case <paramref name="v"/>
+        /// is true, otherwise the string represented by <paramref name="no"/>.</returns>
         public static string ToString(this bool v, string yes, string no) => v ? yes : no;
 
         /// <summary>
@@ -115,6 +124,9 @@ namespace Loudenvier.Utils
                 idx = str.IndexOf(ch, startIndex + idx + 1);
             return idx;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string? Truncate(this string s, int max) => s?.Length > max ? s[..max] : s;
 
         /// <summary>
         /// Removes the number of lines denoted by <paramref name="linesToStrip"/> from the string. 
@@ -214,9 +226,13 @@ namespace Loudenvier.Utils
             return parts;
         }
 #if NETSTANDARD2_1_OR_GREATER
-    // No need for the following "Replaces" because they're already baked-in and faster
+        // Simply forwards to baked-in and faster replace
+        public static string Replace(this string searchSpace, string oldValue, string newValue, bool ignoreCase) 
+            => searchSpace.Replace(oldValue, newValue, ignoreCase, null);
 #elif NET6_0_OR_GREATER
-    // No need for the following "Replaces" because they're already baked-in and faster
+        // Simply forwards to baked-in and faster replace
+        public static string Replace(this string searchSpace, string oldValue, string newValue, bool ignoreCase) 
+            => searchSpace.Replace(oldValue, newValue, ignoreCase, null);
 #else
         public static string Replace(this string searchSpace, string oldValue, string newValue, bool ignoreCase) 
             => Replace(searchSpace, oldValue, newValue, options: ignoreCase ? CompareOptions.OrdinalIgnoreCase : CompareOptions.None);
