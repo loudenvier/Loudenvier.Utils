@@ -23,57 +23,56 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 #endregion
 
-namespace Newtonsoft.Json.Serialization
+namespace Newtonsoft.Json.Serialization;
+
+/// <summary>
+/// An upper case naming strategy.
+/// </summary>
+public sealed class UpperCaseNamingStrategy : NamingStrategy
 {
     /// <summary>
-    /// An upper case naming strategy.
+    /// Initializes a new instance of the <see cref="UpperCaseNamingStrategy"/> class.
     /// </summary>
-    public sealed class UpperCaseNamingStrategy : NamingStrategy
-    {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="UpperCaseNamingStrategy"/> class.
-        /// </summary>
-        /// <param name="processDictionaryKeys">
-        /// A flag indicating whether dictionary keys should be processed.
-        /// </param>
-        /// <param name="overrideSpecifiedNames">
-        /// A flag indicating whether explicitly specified property names should be processed,
-        /// e.g. a property name customized with a <see cref="JsonPropertyAttribute"/>.
-        /// </param>
-        public UpperCaseNamingStrategy(bool processDictionaryKeys, bool overrideSpecifiedNames) {
-            ProcessDictionaryKeys = processDictionaryKeys;
-            OverrideSpecifiedNames = overrideSpecifiedNames;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="UpperCaseNamingStrategy"/> class.
-        /// </summary>
-        /// <param name="processDictionaryKeys">
-        /// A flag indicating whether dictionary keys should be processed.
-        /// </param>
-        /// <param name="overrideSpecifiedNames">
-        /// A flag indicating whether explicitly specified property names should be processed,
-        /// e.g. a property name customized with a <see cref="JsonPropertyAttribute"/>.
-        /// </param>
-        /// <param name="processExtensionDataNames">
-        /// A flag indicating whether extension data names should be processed.
-        /// </param>
-        public UpperCaseNamingStrategy(bool processDictionaryKeys, bool overrideSpecifiedNames, bool processExtensionDataNames)
-            : this(processDictionaryKeys, overrideSpecifiedNames) {
-            ProcessExtensionDataNames = processExtensionDataNames;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="UpperCaseNamingStrategy"/> class.
-        /// </summary>
-        public UpperCaseNamingStrategy() {
-        }
-
-        /// <summary>
-        /// Resolves the specified property name converting to upper case.
-        /// </summary>
-        /// <param name="name">The property name to resolve.</param>
-        /// <returns>The resolved property name in upper case.</returns>
-        protected override string ResolvePropertyName(string name) => name.ToUpperInvariant();
+    /// <param name="processDictionaryKeys">
+    /// A flag indicating whether dictionary keys should be processed.
+    /// </param>
+    /// <param name="overrideSpecifiedNames">
+    /// A flag indicating whether explicitly specified property names should be processed,
+    /// e.g. a property name customized with a <see cref="JsonPropertyAttribute"/>.
+    /// </param>
+    public UpperCaseNamingStrategy(bool processDictionaryKeys, bool overrideSpecifiedNames) {
+        ProcessDictionaryKeys = processDictionaryKeys;
+        OverrideSpecifiedNames = overrideSpecifiedNames;
     }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UpperCaseNamingStrategy"/> class.
+    /// </summary>
+    /// <param name="processDictionaryKeys">
+    /// A flag indicating whether dictionary keys should be processed.
+    /// </param>
+    /// <param name="overrideSpecifiedNames">
+    /// A flag indicating whether explicitly specified property names should be processed,
+    /// e.g. a property name customized with a <see cref="JsonPropertyAttribute"/>.
+    /// </param>
+    /// <param name="processExtensionDataNames">
+    /// A flag indicating whether extension data names should be processed.
+    /// </param>
+    public UpperCaseNamingStrategy(bool processDictionaryKeys, bool overrideSpecifiedNames, bool processExtensionDataNames)
+        : this(processDictionaryKeys, overrideSpecifiedNames) {
+        ProcessExtensionDataNames = processExtensionDataNames;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UpperCaseNamingStrategy"/> class.
+    /// </summary>
+    public UpperCaseNamingStrategy() {
+    }
+
+    /// <summary>
+    /// Resolves the specified property name converting to upper case.
+    /// </summary>
+    /// <param name="name">The property name to resolve.</param>
+    /// <returns>The resolved property name in upper case.</returns>
+    protected override string ResolvePropertyName(string name) => name.ToUpperInvariant();
 }
