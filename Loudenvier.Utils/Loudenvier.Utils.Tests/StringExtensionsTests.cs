@@ -109,27 +109,27 @@ public class StringExtensionsTests
     [Fact]
     public void ReplaceCanIgnoreCase() {
         var original = "feLIpe";
-        Assert.Equal("felipe", original.Replace("li", "li", options: System.Globalization.CompareOptions.IgnoreCase));
+        Assert.Equal("felipe", original.Replace("li", "li", ignoreCase: true));
     }
     [Fact]
     public void ReplaceReturnsOriginalIfNoReplacementOcurrs() {
         var original = "feLIpe";
-        Assert.Same(original, original.Replace("xy", "li", options: System.Globalization.CompareOptions.IgnoreCase));
+        Assert.Same(original, original.Replace("xy", "li", ignoreCase: true));
     }
     [Fact]
     public void ReplaceWorksWhenReplacementIsAtTheStart() {
         var original = "feLIpe";
-        Assert.Equal("FeLIpe", original.Replace("fe", "Fe", options: System.Globalization.CompareOptions.IgnoreCase));
+        Assert.Equal("FeLIpe", original.Replace("fe", "Fe", ignoreCase: true));
     }
     [Fact]
     public void ReplaceWorksWhenReplacementIsAtTheEnd() {
         var original = "feLIpe";
-        Assert.Equal("feLIPE", original.Replace("pe", "PE", options: System.Globalization.CompareOptions.IgnoreCase));
+        Assert.Equal("feLIPE", original.Replace("pe", "PE", ignoreCase: true));
     }
     [Fact]
     public void ReplaceWillReplaceAllOccurrances() {
         var original = "Felipe fErnando FElix";
-        Assert.Equal("Felipe Fernando Felix", original.Replace("fe", "Fe", options: System.Globalization.CompareOptions.IgnoreCase));
+        Assert.Equal("Felipe Fernando Felix", original.Replace("fe", "Fe", ignoreCase: true));
     }
 
 }
