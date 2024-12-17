@@ -16,10 +16,10 @@ public static class SqlServerErrorHelpers
 
     public static IEnumerable<string> GrabErrorInfo(this string message) {
         if (message is null || string.IsNullOrWhiteSpace(message))
-            return Enumerable.Empty<string>();
+            return [];
         var captures = InfoGrabber.Matches(message);
         if (captures is null)
-            return Enumerable.Empty<string>();
+            return [];
         return captures.AsStrings();
     }
 }

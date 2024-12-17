@@ -23,8 +23,9 @@ public static class NetworkStreamExtensions {
         int originalReadTimeout = stream.ReadTimeout;
         stream.ReadTimeout = (int)timeout.Value.TotalMilliseconds;
         // performs a zero-byte read, e.g., just waits for the setup read timeout
-        _ = stream.Read(Array.Empty<byte>(), 0, 0);
+        _ = stream.Read([], 0, 0);
         stream.ReadTimeout = originalReadTimeout;
+        // bellow is the old, inneficient way we did it in the past...
         /*if (timeout.HasValue && !System.Threading.SpinWait.SpinUntil(() => stream.DataAvailable, timeout.Value))
             throw new TimeoutException($"Timeout expired waiting for data. The timeout was {timeout}");*/
     }

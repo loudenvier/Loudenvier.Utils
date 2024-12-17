@@ -1,4 +1,6 @@
-﻿using Loudenvier.Utils.Events;
+﻿using Loudenvier.Utils.Drawing;
+using Loudenvier.Utils.Events;
+using System.Drawing;
 
 namespace Loudenvier.Utils.Tests;
 
@@ -76,5 +78,4 @@ public class EventsExtensionsTests {
         public event EventHandler<EventArgs>? InheritedEvent;
         public bool HasInheritedHandler => InheritedEvent?.GetInvocationList().Any() == true;
     }
-    
 }

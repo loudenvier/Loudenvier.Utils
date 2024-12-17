@@ -1,5 +1,6 @@
 ﻿//using SpookilySharp;
 using System;
+using System.Data;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -42,15 +43,20 @@ public static class FileExt
         File.WriteAllBytes(path, bytes);
     }
 
-    /// <summary>Reads all bytes from the given <paramref name="stream"/>. No length checking is done. 
-    /// Callers must take care to prevent Out of Memory scenarios.</summary>
+    /// <summary>Reads all bytes (or up to <paramref name="len"/> bytes) from the given <paramref name="stream"/>. 
+    /// No length checking is done. Callers must take care to prevent Out of Memory scenarios. 
+    /// Set <paramref name="len"/> to the desired length if the <paramref name="stream"/> doesn't allow seeking 
+    /// or if you want to read only a specific amount of bytes.</summary>
     /// <remarks>Differently from <see cref="File.ReadAllBytes(string)"/> this method does not check 
     /// for data lengths bigger than <see cref="int.MaxValue"/> and it also does not throw if the end 
-    /// of file is reached before length bytes are read</remarks>
-    /// <param name="stream">The stream to read data from</param>
+    /// of stream (or file) is reached before length bytes are read.</remarks>
+    /// <param name="stream">The stream to read data from.</param>
+    /// <param name="len">The maximum number of bytes to read (it's required when the <paramref name="stream"/> doesn't
+    /// allow seeking, since it's <see cref="Stream.Length"/> property is unreadable in those scenarios).</param>
     /// <returns>A byte array with all the data on the stream</returns>
-    public static async Task<byte[]> ReadAllBytesAsync(this Stream stream) {
-        var buffer = new byte[stream.Length];
+    public static async Task<byte[]> ReadAllBytesAsync(this Stream stream, long? len = null) {
+        len ??= stream.Length;
+        var buffer = new byte[len.Value];
         int bytesRead, pos = 0;
         do {
             bytesRead = await stream.ReadAsync(buffer, pos, buffer.Length - pos).ConfigureAwait(false);

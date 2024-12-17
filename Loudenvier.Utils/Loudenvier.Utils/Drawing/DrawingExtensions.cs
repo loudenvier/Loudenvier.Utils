@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Linq;
 
 namespace Loudenvier.Utils.Drawing;
 
@@ -40,6 +41,31 @@ public static class DrawingExtensions
         var width = rect.Width * percentWidthOrTotal;
         var height = rect.Height * percentHeight;
         Expand(ref rect, (int)width, (int)height, boundingBox);
+    }
+
+    /// <summary>
+    /// Parses a string representation of a rectangle into a <see cref="Rectangle"/> object. Valid formats are 
+    /// "length" (defines a square of side = length), "width,height" (defines a rectangle at (0,0) with the specified width and height) 
+    /// or "x,y,width,height" (defines a rectangle at (x, y) with the specified width and height), 
+    /// where length, x, y, width and height are all integers (spaces are allowed)."),
+    /// </summary>
+    /// <param name="text">The textual representation of the rectangle</param>
+    /// <param name="separator">Allow setting of a custom separator (comma is the default)</param>
+    /// <returns></returns>
+    /// <exception cref="FormatException"></exception>
+    public static Rectangle ParseRect(this string? text, char separator = ',') {
+        if (text is null || string.IsNullOrWhiteSpace(text))
+            return Rectangle.Empty;
+        var parts = text.Split(separator).Select(text => Convert.ToInt32(text)).ToArray();
+        var rect = parts switch {
+            { Length: 1 } => new Rectangle(0, 0, parts[0], parts[0]),
+            { Length: 2 } => new Rectangle(0, 0, parts[0], parts[1]),
+            { Length: 4 } => new Rectangle(parts[0], parts[1], parts[2], parts[3]),
+            _ => throw new FormatException("The rectangle was not in the expected format. " +
+            "Valid formats are \"width,height\" or \"x,y,width,height\", " +
+            "where x, y, width and height are integers."),
+        };
+        return rect;
     }
 
 

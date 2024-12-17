@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace Loudenvier.Utils.CommandLine;
@@ -12,12 +11,13 @@ public static class Tokenizer
     /// If the input contains double quoted (i.e. " ) arguments, these will be returned without quotes, unless the 
     /// argument contains quotes (whether escaped or unescaped).
     /// </summary>
+    /// <remarks>Taken directly from https://github.com/nelyom/cmdLineTokenizer</remarks>
     /// <param name="commandLine">The command line used to launch the application.  Usually Environment.CommandLine</param>
     /// <returns>List<string></returns>
     public static List<string> TokenizeCommandLineToList(string commandLine) {
 
-        List<string> tokens = new List<string>();
-        StringBuilder token = new StringBuilder(255);
+        List<string> tokens = [];
+        StringBuilder token = new(255);
         var sections = commandLine.Split(' ');
 
         for (int curPart = 0; curPart < sections.Length; curPart++) {
@@ -83,6 +83,7 @@ public static class Tokenizer
     /// The GOD separator between each argument is SPACE.
     /// If the input contains double quoted (i.e. " ) arguments, these will be returned without quotes, unless the argument contains quotes (whether escaped or unescaped).
     /// </summary>
+    /// <remarks>Taken directly from https://github.com/nelyom/cmdLineTokenizer</remarks>
     /// <param name="commandLine">The command line used to launch the application.  Usually Environment.CommandLine</param>
     /// <returns>string[]</returns>
     public static string[] TokenizeCommandLineToStringArray(string commandLine) {

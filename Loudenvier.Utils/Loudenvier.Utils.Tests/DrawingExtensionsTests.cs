@@ -43,4 +43,32 @@ public class DrawingExtensionsTests {
         Assert.Equal(new Rectangle(0, 0, 30, 30), rect);
     }
 
+    [Fact]
+    public void ParseRect_ReturnsEmpty_OnNullText() {
+        Assert.Equal(Rectangle.Empty, ((string?)null).ParseRect());
+    }
+    [Fact]
+    public void ParseRect_ReturnsEmpty_OnEmptyText() {
+        Assert.Equal(Rectangle.Empty, "".ParseRect());
+    }
+    [Fact]
+    public void ParseRect_ReturnsEmpty_OnWhiteSpaceText() {
+        Assert.Equal(Rectangle.Empty, "    ".ParseRect());
+    }
+    [Fact]
+    public void ParseRect_WorksWithSingleLength_ResultingIn() {
+        Assert.Equal(new Rectangle(0, 0, 100, 100), "100".ParseRect());
+    }
+    [Fact]
+    public void ParseRect_WorksWithWidthAndHeightOnly() {
+        Assert.Equal(new Rectangle(0, 0, 100, 200), "100,200".ParseRect());
+    }
+    [Fact]
+    public void ParseRect_WorksWithAllFourX_Y_Width_Height() {
+        Assert.Equal(new Rectangle(10, 20, 100, 200), "10,20,100,200".ParseRect());
+    }
+    [Fact]
+    public void ParseRect_SpacesAreAllowed() {
+        Assert.Equal(new Rectangle(10, 20, 100, 200), " 10 ,  20 ,    100,   200".ParseRect());
+    }
 }
