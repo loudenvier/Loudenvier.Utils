@@ -3,22 +3,17 @@ using Microsoft.Data.SqlClient;
 
 namespace Loudenvier.Utils.Tests;
 
-public class SqlExtensionsTests : IDisposable, IClassFixture<SqlExtensionsTests.SqlExtensionsTestsFixture> {
-    private readonly SqlExtensionsTestsFixture _sqlExtensionsTestsFixture;
-
-    public SqlExtensionsTests(SqlExtensionsTestsFixture sqlExtensionsTestsFixture) {
-        _sqlExtensionsTestsFixture = sqlExtensionsTestsFixture;
-    }
-
+public class SqlExtensionsTests(SqlExtensionsTests.SqlExtensionsTestsFixture sqlExtensionsTestsFixture) : IDisposable, IClassFixture<SqlExtensionsTests.SqlExtensionsTestsFixture> {
+    private readonly SqlExtensionsTestsFixture _sqlExtensionsTestsFixture = sqlExtensionsTestsFixture;
     const string ConnectionStringTestDb = "Data Source=.;Initial Catalog=SqlExtensionsTests;Persist Security Info=True;Integrated Security=SSPI;TrustServerCertificate=True";
     const string TestDatabase = "SqlExtensionsTests";
     const string TestTable = "SqlExtensionsTable";
 
-#pragma warning disable CA1816 // Dispose methods should call SuppressFinalize
     public void Dispose() {
+        GC.SuppressFinalize(this);
         ClearTestData();
     }
-#pragma warning restore CA1816 // Dispose methods should call SuppressFinalize
+
     static void ClearTestData() {
         using var conn = new SqlConnection(ConnectionStringTestDb);
         conn.Execute($"""
@@ -189,9 +184,11 @@ public class SqlExtensionsTests : IDisposable, IClassFixture<SqlExtensionsTests.
     {
         const string ConnectionString = "Data Source=.;Persist Security Info=True;Integrated Security=SSPI;TrustServerCertificate=True";
         public SqlExtensionsTestsFixture() => CreateDatabase();
-#pragma warning disable CA1816 // Dispose methods should call SuppressFinalize
-        public void Dispose() => DropDatabase(); // actually does nothing now.. 
-#pragma warning restore CA1816 // Dispose methods should call SuppressFinalize
+
+        public void Dispose() {
+            GC.SuppressFinalize(this);  
+            DropDatabase(); // actually does nothing now.. 
+        }
 
         static void CreateDatabase() {
             const string CreateDBIfNeeded = $"""

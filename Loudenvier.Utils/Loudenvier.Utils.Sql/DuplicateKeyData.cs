@@ -40,7 +40,7 @@ public class DuplicateKeyData
     public string Value { get; }
     public bool IsPrimaryKeyViolation => ErrorCode == SqlErrors.PRIMARY_KEY_VIOLATION;
 
-    static readonly DuplicateKeyData Dummy = new(0, new string[] {"","",""});
+    static readonly DuplicateKeyData Dummy = new(0, ["","",""]);
     public static bool TryParse(int errorCode, string errorMessage, out DuplicateKeyData data) {
         if (!TryParseMessage(errorMessage, out var errorInfo)) { 
             data = Dummy;

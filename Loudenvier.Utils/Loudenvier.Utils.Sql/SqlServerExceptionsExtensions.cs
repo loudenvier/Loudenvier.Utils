@@ -29,9 +29,10 @@ public static class SqlServerExceptionsExtensions
     /// <returns><c>true</c> if the exception <paramref name="ex"/> contains or has itself 
     /// one of the <paramref name="errors"/> provided.</returns>
     public static bool HasOneOfTheseSqlErrors(this Exception ex, params int[] errors) {
-        if (ex.IsOneOfTheseSqlErrors(errors)) return true;
-        while ((ex = ex!.InnerException) is not null)
-            if (ex.IsOneOfTheseSqlErrors(errors))
+        if (ex.IsOneOfTheseSqlErrors(errors) == true) return true;
+        Exception? e = ex;
+        while ((e = e!.InnerException) is not null)
+            if (e.IsOneOfTheseSqlErrors(errors))
                 return true;
         return false;
     }
@@ -60,7 +61,7 @@ public static class SqlServerExceptionsExtensions
     public static bool HasUniqueConstraintViolation(this Exception ex)
         => ex.HasOneOfTheseSqlErrors(SqlErrors.UNIQUE_CONSTRAINT_VIOLATION);
 
-    static bool TryFindFirstImmediateError(Exception ex, int[] errors, out SqlError? result) {
+    static bool TryFindFirstImmediateError(Exception? ex, int[] errors, out SqlError? result) {
         result = null;
         if (ex is SqlException sqlEx)
             result = sqlEx.Errors.OfType<SqlError>().FirstOrDefault(e => e.Number.In(errors));
@@ -70,8 +71,9 @@ public static class SqlServerExceptionsExtensions
     public static SqlError? FindFirstError(this Exception ex, params int[] errors) {
         if (TryFindFirstImmediateError(ex, errors, out SqlError? found)) 
             return found;
-        while ((ex = ex!.InnerException) is not null)
-            if (TryFindFirstImmediateError(ex, errors, out found))
+        Exception? e = ex;
+        while ((e = e!.InnerException) is not null)
+            if (TryFindFirstImmediateError(e, errors, out found))
                 return found;
         return null;
     }
