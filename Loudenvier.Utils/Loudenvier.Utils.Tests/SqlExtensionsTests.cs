@@ -1,5 +1,5 @@
 ﻿using Dapper;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 
 namespace Loudenvier.Utils.Tests;
 
@@ -10,7 +10,7 @@ public class SqlExtensionsTests : IDisposable, IClassFixture<SqlExtensionsTests.
         _sqlExtensionsTestsFixture = sqlExtensionsTestsFixture;
     }
 
-    const string ConnectionStringTestDb = "Data Source=.\\SQLEXPRESS;Initial Catalog=SqlExtensionsTests;Persist Security Info=True;Integrated Security=SSPI;";
+    const string ConnectionStringTestDb = "Data Source=.;Initial Catalog=SqlExtensionsTests;Persist Security Info=True;Integrated Security=SSPI;TrustServerCertificate=True";
     const string TestDatabase = "SqlExtensionsTests";
     const string TestTable = "SqlExtensionsTable";
 
@@ -187,7 +187,7 @@ public class SqlExtensionsTests : IDisposable, IClassFixture<SqlExtensionsTests.
 
     public class SqlExtensionsTestsFixture : IDisposable
     {
-        const string ConnectionString = "Data Source=.\\SQLEXPRESS;Persist Security Info=True;Integrated Security=SSPI;";
+        const string ConnectionString = "Data Source=.;Persist Security Info=True;Integrated Security=SSPI;TrustServerCertificate=True";
         public SqlExtensionsTestsFixture() => CreateDatabase();
 #pragma warning disable CA1816 // Dispose methods should call SuppressFinalize
         public void Dispose() => DropDatabase(); // actually does nothing now.. 

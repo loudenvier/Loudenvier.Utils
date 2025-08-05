@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 
 namespace Loudenvier.Utils;
 

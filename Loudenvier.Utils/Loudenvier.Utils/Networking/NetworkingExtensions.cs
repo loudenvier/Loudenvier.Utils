@@ -150,7 +150,7 @@ public static class NetworkingHelpers
         if (ipAddressWithPort is null ||  string.IsNullOrWhiteSpace(ipAddressWithPort))
             throw new ArgumentNullException("ipAddressWithPort");
         ipAddressWithPort = ipAddressWithPort.RemoveHttpPart()!;
-        var parts = ipAddressWithPort.Split(new[] { separator }, StringSplitOptions.RemoveEmptyEntries);
+        var parts = ipAddressWithPort.Split([separator], StringSplitOptions.RemoveEmptyEntries);
         var ip = parts[0];
         int port = parts.Length > 1 ? Convert.ToInt32(parts[1]) : defaultPort;
         var ipAddr = ip.ToIPAddress();
@@ -168,7 +168,7 @@ public static class NetworkingHelpers
         if (ipOrHostNameWithPort is null || string.IsNullOrWhiteSpace(ipOrHostNameWithPort))
             return (null, 0);
         var addr = ipOrHostNameWithPort.RemoveHttpPart()!;
-        var parts = addr.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
+        var parts = addr.Split([':'], StringSplitOptions.RemoveEmptyEntries);
         var port = parts.Length > 1 ? Convert.ToInt32(parts[1]) : defaultPort;
         return (parts[0], port);
     }

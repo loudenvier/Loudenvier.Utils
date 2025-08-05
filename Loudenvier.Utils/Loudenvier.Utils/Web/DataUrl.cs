@@ -25,7 +25,7 @@ public class DataUrl {
         if (!string.IsNullOrEmpty(contentType)) {
             ContentMediaType = new ContentType(contentType);
             MediaType = ContentMediaType.MediaType;
-            MediaTypeParameters = new Dictionary<string, string>();
+            MediaTypeParameters = [];
             foreach (string key in ContentMediaType.Parameters.Keys)
                 MediaTypeParameters.Add(key, ContentMediaType!.Parameters![key]!);
         }
@@ -34,7 +34,7 @@ public class DataUrl {
     }
     /// <summary>The media type of this dataUrl (if null 'text/plain' should be inferred -> <see cref="MediaTypeOrDefault"/>)</summary>
     public string? MediaType { get; private set; }
-    public Dictionary<string, string> MediaTypeParameters { get; private set; } = new Dictionary<string, string>();
+    public Dictionary<string, string> MediaTypeParameters { get; private set; } = [];
     public ContentType? ContentMediaType { get; private set; }
     /// <summary>Returns the encoding (currently only 'base64' is of any use)</summary>
     public string? Encoding { get; private set; }
