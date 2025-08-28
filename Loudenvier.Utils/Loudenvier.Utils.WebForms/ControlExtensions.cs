@@ -7,11 +7,18 @@ namespace Loudenvier.Utils.WebForms
     public static class ControlExtensions
     {
         /// <summary>
-        /// Recursively enumerates all controls on a <see cref="ControlCollection"/> (<see cref="Control.Controls"/>)
+        /// Recursively enumerates all controls on a <see cref="ControlCollection"/> (<see cref="Control.Controls"/>) 
+        /// optionally excluding children of certain types.
         /// </summary>
         /// <remarks>This lovely method was taken from https://asp-blogs.azurewebsites.net/dfindley/linq-the-uber-findcontrol 
-        /// by the amazing David Findley (https://asp-blogs.azurewebsites.net/dfindley)</remarks>
+        /// by the amazing David Findley (https://asp-blogs.azurewebsites.net/dfindley)
+        /// <para>
+        /// Use <paramref name="excludeChildrenFrom"/> for performance reasons when you're sure the control 
+        /// you are searching for will never be a child of certain type(s).
+        /// </para>
+        /// </remarks>.
         /// <param name="controls">The collection of controls to enumerate</param>
+        /// <param name="excludeChildrenFrom">A list of types the method won't recursively search</param>
         /// <returns>An enumerable which yields every control (and it's children) found in the control collection.</returns>
         public static IEnumerable<Control> All(this ControlCollection controls, params Type[] excludeChildrenFrom) {
             foreach (Control control in controls) {
