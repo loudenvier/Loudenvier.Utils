@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.1.28" />
+    <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="PolySharp" Version="1.14.1">
       <PrivateAssets>all</PrivateAssets>
@@ -28,6 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Loudenvier.Utils.Dapper\Loudenvier.Utils.Dapper.csproj" />
     <ProjectReference Include="..\Loudenvier.Utils.Networking\Loudenvier.Utils.Networking.csproj" />
     <ProjectReference Include="..\Loudenvier.Utils.Sql\Loudenvier.Utils.Sql.csproj" />
     <ProjectReference Include="..\Loudenvier.Utils\Loudenvier.Utils.csproj" />
