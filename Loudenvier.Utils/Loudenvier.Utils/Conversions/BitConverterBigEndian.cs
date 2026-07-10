@@ -1,28 +1,28 @@
 ﻿using System.Buffers.Binary;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 
 // I'm putting it into the System namespace so that people using BitConverter may become
 // aware of BitConverterBigEndian when using intellisense
-namespace System; 
+namespace System;
 
 /// <summary>
 /// The <c>BitConverterBigEndian</c> class replicates the API surface of
-/// <see cref="BitConverter"/> but assumes the source array of bytes to 
-/// convert to one of the base data types, and the destination array of bytes
-/// for converting base data types into arrays are in big-endian byte-order,
-/// while still being agnostic to the host's byte-order.
+/// <see cref="BitConverter"/> but assumes that both the source byte arrays to 
+/// convert from and the destination byte arrays to convert into are in big-endian byte-order,
+/// while remaining agnostic to the host's native byte-order.
 /// </summary>
 /// <remarks>
-/// It tries to be as performant as possible taking into account the data size and 
-/// the runtime's target byte-order when performing conversions. 
-/// As with <see cref="BitConverter" /> it takes into account the host's byte-order 
-/// when converting from/to big-endian. 
-/// It removes ambiguity when reading from sources or writing to destinations in 
-/// big-endian byte-order (file formats, network protocols). 
-/// It reads the data and assemble it in memory in the correct byte-order, 
-/// avoiding an extra step to reverse byte-order, which may increase performance 
-/// when dealing with big-endian data.
+/// In modern .NET versions (.NET 6.0 and above), you might not strictly need this class, 
+/// as the <see cref="BinaryPrimitives"/> class provides native, highly optimized APIs for 
+/// converting to/from big-endian data using spans. However, <see cref="BinaryPrimitives"/> 
+/// is not as performant when targeting legacy runtimes (such as .NET Framework 4.7.2).
+/// <para/>
+/// This implementation guarantees maximum performance across all targets by adjusting its inner 
+/// mechanics based on the platform: it leverages hardware intrinsics on modern runtimes and falls back 
+/// to ultra-fast, hand-optimized pointer bit-shifting on legacy frameworks.
+/// <para/>
+/// It removes ambiguity and simplifies migration when reading from sources or writing to destinations 
+/// that enforce big-endian byte-order, such as specific file formats and network protocols.
 /// </remarks>
 public static class BitConverterBigEndian
 {
@@ -52,7 +52,7 @@ public static class BitConverterBigEndian
     /// regardless of the computer's architecture endianness.</remarks>
     /// <returns>An array of bytes with length 2.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static byte[] GetBytes(char value) 
+    public static byte[] GetBytes(char value)
         => GetBytes((short)value);
 
     /// <summary>Returns the specified 16-bit signed integer value as an array bytes 
@@ -64,11 +64,17 @@ public static class BitConverterBigEndian
     /// <returns>An array of bytes with length 2.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public unsafe static byte[] GetBytes(short value) {
-        byte[] bytes = [(byte)(value >> 8), (byte)value];
-
-#if BIGENDIAN
-#else
+#if NET6_0_OR_GREATER
+        byte[] bytes = new byte[2];
+        BinaryPrimitives.WriteInt16BigEndian(bytes, value);
         return bytes;
+#else
+        if (BitConverter.IsLittleEndian) {
+            return [(byte)(value >> 8), (byte)value];
+        } else {
+            byte* p = (byte*)&value;
+            return [p[0], p[1]];
+        }
 #endif
     }
 
@@ -81,8 +87,18 @@ public static class BitConverterBigEndian
     /// <returns>An array of bytes with length 4.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public unsafe static byte[] GetBytes(int value) {
-        byte[] bytes = [(byte)(value >> 24), (byte)(value >> 16), (byte)(value >> 8), (byte)value];
+#if NET6_0_OR_GREATER
+        byte[] bytes = new byte[4];
+        BinaryPrimitives.WriteInt32BigEndian(bytes, value);
         return bytes;
+#else
+        if (BitConverter.IsLittleEndian) {
+            return [(byte)(value >> 24), (byte)(value >> 16), (byte)(value >> 8), (byte)value];
+        } else {
+            byte* p = (byte*)&value;
+            return [p[0], p[1], p[2], p[3]];
+        }
+#endif
     }
 
     /// <summary>Returns the specified 64-bit signed integer value as an array of bytes 
@@ -94,18 +110,28 @@ public static class BitConverterBigEndian
     /// <returns>An array of bytes with length 8.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public unsafe static byte[] GetBytes(long value) {
-        byte[] bytes =
-        [
-            (byte)(value >> 56),
-            (byte)(value >> 48),
-            (byte)(value >> 40),
-            (byte)(value >> 32),
-            (byte)(value >> 24),
-            (byte)(value >> 16),
-            (byte)(value >> 8),
-            (byte)value,
-        ];
+#if NET6_0_OR_GREATER
+        byte[] bytes = new byte[8];
+        BinaryPrimitives.WriteInt64BigEndian(bytes, value);
         return bytes;
+#else
+        if (BitConverter.IsLittleEndian) {
+            return
+            [
+                (byte)(value >> 56),
+                (byte)(value >> 48),
+                (byte)(value >> 40),
+                (byte)(value >> 32),
+                (byte)(value >> 24),
+                (byte)(value >> 16),
+                (byte)(value >> 8),
+                (byte)value
+            ];
+        } else {
+            byte* p = (byte*)&value;
+            return [p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]];
+        }
+#endif
     }
 
     /// <summary>Returns the specified 16-bit unsigned integer value as an array bytes 
@@ -196,17 +222,17 @@ public static class BitConverterBigEndian
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe short ToInt16(byte[] value, int startIndex = 0) {
         fixed (byte* pbyte = &value[startIndex]) {
-#if BIGENDIAN
-#if NET5_0_OR_GREATER
-            return Unsafe.ReadUnaligned<short>(pbyte);
-#endif
-            if (startIndex % 2 == 0)  // data is aligned 
-                return *((short*)pbyte);
-            return (short)((*pbyte) | (*(pbyte + 1) << 8));
-#endif
+#if NET6_0_OR_GREATER
+            short raw = Unsafe.ReadUnaligned<short>(pbyte);
+            return BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(raw) : raw;
+#else
+            if (!BitConverter.IsLittleEndian) {
+                return Unsafe.ReadUnaligned<short>(pbyte);
+            }
             // for shorts the bit-shifting conversion is faster than the commented code bellow
             // return BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<short>(pbyte));
             return (short)((*pbyte << 8) | (*(pbyte + 1)));
+#endif
         }
     }
 
@@ -223,17 +249,17 @@ public static class BitConverterBigEndian
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe int ToInt32(byte[] value, int startIndex = 0) {
         fixed (byte* pbyte = &value[startIndex]) {
-#if BIGENDIAN
-#if NET5_0_OR_GREATER
-            return Unsafe.ReadUnaligned<int>(pbyte);
-#endif
-            if (startIndex % 4 == 0)  // data is aligned 
-                return *((int*)pbyte);
-            return (*pbyte) | (*(pbyte + 1) << 8) | (*(pbyte + 2) << 16) | (*(pbyte + 3) << 24);
-#endif
+#if NET6_0_OR_GREATER
+            int raw = Unsafe.ReadUnaligned<int>(pbyte);
+            return BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(raw) : raw;
+#else
+            if (!BitConverter.IsLittleEndian) {
+                return Unsafe.ReadUnaligned<int>(pbyte);
+            }
             // for ints the bit-shifting conversion is faster than the commented code bellow
             // return BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<int>(pbyte));
             return (*pbyte << 24) | (*(pbyte + 1) << 16) | (*(pbyte + 2) << 8) | (*(pbyte + 3));
+#endif
         }
     }
 
@@ -253,22 +279,20 @@ public static class BitConverterBigEndian
             //
             //for Int64 ReverseEndianness + ReadUnaligned performs faster than bit-shifting
             //
-#if BIGENDIAN
-            return Unsafe.ReadUnaligned<long>(pbyte);
-            /* ReadUnaligned performs better
-            if (startIndex % 8 == 0)  // data is aligned 
-                return *((long*)pbyte);
-            int i1 = (*pbyte) | (*(pbyte + 1) << 8) | (*(pbyte + 2) << 16) | (*(pbyte + 3) << 24);
-            int i2 = (*(pbyte + 4)) | (*(pbyte + 5) << 8) | (*(pbyte + 6) << 16) | (*(pbyte + 7) << 24);
-            return (uint)i1 | ((long)i2 << 32);
-            */
-#endif
+#if NET6_0_OR_GREATER
+            long raw = Unsafe.ReadUnaligned<long>(pbyte);
+            return BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(raw) : raw;
+#else
+            if (!BitConverter.IsLittleEndian) {
+                return Unsafe.ReadUnaligned<long>(pbyte);
+            }
             return BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<long>(pbyte));
             /* ReadUnaligned performs better
             int i1 = (*pbyte << 24) | (*(pbyte + 1) << 16) | (*(pbyte + 2) << 8) | (*(pbyte + 3));
             int i2 = (*(pbyte + 4) << 24) | (*(pbyte + 5) << 16) | (*(pbyte + 6) << 8) | (*(pbyte + 7));
             return (uint)i2 | ((long)i1 << 32);
             */
+#endif
         }
     }
 
@@ -284,7 +308,7 @@ public static class BitConverterBigEndian
     /// of the computer's architecture endianness.</remarks>
     /// <returns>A 16-bit unsigned integer formed by two bytes beginning at <paramref name="startIndex"/>.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ushort ToUInt16(byte[] value, int startIndex = 0) 
+    public static ushort ToUInt16(byte[] value, int startIndex = 0)
         => (ushort)ToInt16(value, startIndex);
 
     /// <summary>
@@ -298,7 +322,7 @@ public static class BitConverterBigEndian
     /// of the computer's architecture endianness.</remarks>
     /// <returns>A 32-bit unsigned integer formed by four bytes beginning at <paramref name="startIndex"/>.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static uint ToUInt32(byte[] value, int startIndex = 0) 
+    public static uint ToUInt32(byte[] value, int startIndex = 0)
         => (uint)ToInt32(value, startIndex);
 
     /// <summary>
@@ -312,7 +336,7 @@ public static class BitConverterBigEndian
     /// of the computer's architecture endianness.</remarks>
     /// <returns>A 64-bit unsigned integer formed by eight bytes beginning at <paramref name="startIndex"/>.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ulong ToUInt64(byte[] value, int startIndex = 0) 
+    public static ulong ToUInt64(byte[] value, int startIndex = 0)
         => (ulong)ToInt64(value, startIndex);
 
     /// <summary>Returns a Boolean value converted from the byte at a specified position in a byte array.</summary>
@@ -320,7 +344,7 @@ public static class BitConverterBigEndian
     /// <param name="index">The index of the byte within <paramref name="value"/> to convert.</param>
     /// <returns><c>true</c> if the byte at <paramref name="index"/> in <paramref name="value"/> is nonzero; otherwise, <c>false</c></returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool ToBoolean(byte[] value, int index = 0) 
+    public static bool ToBoolean(byte[] value, int index = 0)
         => value[index] != 0;
 
 
@@ -328,7 +352,7 @@ public static class BitConverterBigEndian
     /// <param name="value">A read-only span containing the bytes to convert.</param>
     /// <returns>A Boolean representing the converted bytes.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool ToBoolean(ReadOnlySpan<byte> value) 
+    public static bool ToBoolean(ReadOnlySpan<byte> value)
         => value[0] != 0;
 
     /// <summary>
@@ -370,14 +394,14 @@ public static class BitConverterBigEndian
     /// <param name="startIndex"></param>
     /// <param name="length"></param>
     /// <returns></returns>
-    public static string ToString(byte[] value, int startIndex, int length) 
+    public static string ToString(byte[] value, int startIndex, int length)
         => BitConverter.ToString(value, startIndex, length);
 
-    public static string ToString(byte[] value) 
+    public static string ToString(byte[] value)
         => BitConverter.ToString(value);
 
     // Converts an array of bytes into a String.  
-    public static string ToString(byte[] value, int startIndex) 
+    public static string ToString(byte[] value, int startIndex)
         => BitConverter.ToString(value, startIndex);
 
     /* These methods won't be converted
@@ -407,7 +431,6 @@ public static class BitConverterBigEndian
     }
     */
 }
-
 /* The original BitConverterBigEndian was replaced with a better performing version with almost the same API surface as DOTNET's BitConverter
  *
 /// <summary>
