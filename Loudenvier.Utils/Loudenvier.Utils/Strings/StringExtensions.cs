@@ -225,11 +225,7 @@ public static class StringExtensions
             parts.Add(new string(chars, l, chars.Length - l));
         return parts;
     }
-#if NETSTANDARD2_1_OR_GREATER
-    // Simply forwards to baked-in and faster replace
-    public static string Replace(this string searchSpace, string oldValue, string newValue, bool ignoreCase) 
-        => searchSpace.Replace(oldValue, newValue, ignoreCase, null);
-#elif NET6_0_OR_GREATER
+#if NET6_0_OR_GREATER
     // Simply forwards to baked-in and faster replace
     public static string Replace(this string searchSpace, string oldValue, string newValue, bool ignoreCase) 
         => searchSpace.Replace(oldValue, newValue, ignoreCase, null);
