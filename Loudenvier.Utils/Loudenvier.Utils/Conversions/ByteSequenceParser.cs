@@ -33,7 +33,7 @@ public static class ByteSequenceParser
         int i = 0;
 
         while (i < span.Length) {
-            if (char.IsWhiteSpace(span[i])) {
+            if (char.IsWhiteSpace(span[i]) || span[i] == '-') {
                 i++;
                 continue;
             }
@@ -71,7 +71,7 @@ public static class ByteSequenceParser
             } else {
                 // numeric tokens
                 int start = i;
-                while (i < span.Length && !char.IsWhiteSpace(span[i])) {
+                while (i < span.Length && !char.IsWhiteSpace(span[i]) && span[i] != '-') {
                     i++;
                 }
 
