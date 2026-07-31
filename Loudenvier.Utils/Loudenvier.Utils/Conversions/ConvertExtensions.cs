@@ -40,7 +40,7 @@ public static class ConvertExtensions
     /// <param name="array">An array of 8-bit unsigned integers</param>
     /// <returns>The string representation in hex of the elements in the <paramref name="array"/></returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static string ToHexString(this byte[] array) =>
+    public static string ToHexString(this ReadOnlySpan<byte> array) =>
 #if NET5_0_OR_GREATER
         Convert.ToHexString(array);
 #else
@@ -48,7 +48,7 @@ public static class ConvertExtensions
 #endif
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static string ByteArrayToHexViaLookup32UnsafeDirect(byte[] source) {
+    static string ByteArrayToHexViaLookup32UnsafeDirect(ReadOnlySpan<byte> source) {
         var result = new string((char)0, source.Length * 2);
         unsafe {
             fixed (uint* lookupP = _lookup32Unsafe)
