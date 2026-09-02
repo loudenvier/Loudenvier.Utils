@@ -268,4 +268,47 @@ public static class StringExtensions
         return result.ToString();
     }
 #endif
+
+    /// <summary>
+    /// Removes diacritics (accents) from the string <paramref name="text"/>. For example, "café" becomes "cafe".
+    /// </summary>
+    /// <remarks>Uses Unicode normalization to remove diacritics with great accuracy.</remarks>
+    /// <param name="text">The string from which to remove diacritics.</param>
+    /// <returns>The string with diacritics removed.</returns>
+    public static string RemoveDiacritics(this string text) {
+        if (string.IsNullOrEmpty(text))
+            return text;
+
+#if NET9_0_OR_GREATER
+        const int StackLimit = 256;
+        int maxChars = text.Length * 2;
+        
+        Span<char> buffer = maxChars <= StackLimit 
+            ? stackalloc char[maxChars] 
+            : new char[maxChars];
+
+        if (text.TryNormalize(buffer, out int written, NormalizationForm.FormD)) {
+            int index = 0;
+            for (int i = 0; i < written; i++) {
+                char c = buffer[i];
+                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                    buffer[index++] = c;
+            }
+            return buffer[..index].ToString();
+        }
+#endif
+
+        // .NET Framework / .NET Standard 2.0 / Fallback if TryNormalize fails
+        string textD = text.Normalize(NormalizationForm.FormD);
+        char[] chars = new char[textD.Length];
+        int count = 0;
+
+        for (int i = 0; i < textD.Length; i++) {
+            char c = textD[i];
+            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark) 
+                chars[count++] = c;
+        }
+
+        return new string(chars, 0, count);
+    }
 }
