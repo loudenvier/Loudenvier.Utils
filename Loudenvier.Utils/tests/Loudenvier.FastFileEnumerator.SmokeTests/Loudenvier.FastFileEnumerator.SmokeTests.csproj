@@ -8,10 +8,6 @@
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <!-- Build the same source files that are copied into Loudenvier.Utils. -->
-    <Compile Include="../../Loudenvier.Utils/IO/*.cs" Link="Implementation/%(Filename)%(Extension)" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\Loudenvier.FastFileEnumerator\Loudenvier.FastFileEnumerator.csproj" />
   </ItemGroup>
 </Project>
