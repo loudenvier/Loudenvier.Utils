@@ -116,7 +116,7 @@ internal static class Win32ReferenceScanner
     {
         if (absolutePath.StartsWith(@"\\?\", StringComparison.Ordinal)) return absolutePath;
         if (absolutePath.StartsWith(@"\\", StringComparison.Ordinal))
-            return @"\\?\UNC\" + absolutePath.Substring(2);
+            return @"\\?\UNC\" + absolutePath[2..];
         return @"\\?\" + absolutePath;
     }
 

@@ -5,20 +5,12 @@ using Loudenvier.IO;
 
 namespace Loudenvier.FastFileEnumerator.Benchmarking;
 
-internal readonly struct EntryRecord
+internal readonly struct EntryRecord(string fullPath, long length, FileAttributes attributes, bool isDirectory)
 {
-    public readonly string FullPath;
-    public readonly long Length;
-    public readonly FileAttributes Attributes;
-    public readonly bool IsDirectory;
-
-    public EntryRecord(string fullPath, long length, FileAttributes attributes, bool isDirectory)
-    {
-        FullPath = fullPath;
-        Length = length;
-        Attributes = attributes;
-        IsDirectory = isDirectory;
-    }
+    public readonly string FullPath = fullPath;
+    public readonly long Length = length;
+    public readonly FileAttributes Attributes = attributes;
+    public readonly bool IsDirectory = isDirectory;
 }
 
 internal sealed class ScanAccumulator
@@ -68,11 +60,11 @@ internal sealed class ScanAccumulator
     // comparison for each entry during the timed workload.
     private static ReadOnlySpan<char> RelativeDirectory(ReadOnlySpan<char> directory, int rootLength)
     {
-        ReadOnlySpan<char> relative = directory.Slice(rootLength);
+        ReadOnlySpan<char> relative = directory[rootLength..];
         while (relative.Length > 0 && (relative[0] == '/' || relative[0] == '\\'))
-            relative = relative.Slice(1);
-        while (relative.Length > 0 && (relative[relative.Length - 1] == '/' || relative[relative.Length - 1] == '\\'))
-            relative = relative.Slice(0, relative.Length - 1);
+            relative = relative[1..];
+        while (relative.Length > 0 && (relative[^1] == '/' || relative[^1] == '\\'))
+            relative = relative[..^1];
         return relative;
     }
 }

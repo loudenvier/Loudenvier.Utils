@@ -31,10 +31,10 @@ internal static class BenchmarkRunner
 {
     private static long _sink;
     private static readonly CultureInfo CI = CultureInfo.InvariantCulture;
-    private static readonly string[] CsvHeader = {
+    private static readonly string[] CsvHeader = [
         "Workload", "Backend", "BufferBytes", "Iteration", "ElapsedMs", "ManagedBytes", "GC0", "GC1", "GC2",
         "Files", "Directories", "LogicalBytes", "HashHex", "MaterializedRecords", "Runtime", "Root"
-    };
+    ];
 
     internal static void Execute(BenchmarkOptions options)
     {
@@ -183,8 +183,8 @@ internal static class BenchmarkRunner
         foreach (BackendVariant variant in methods)
         {
             List<BenchmarkSample> samples = byMethod[variant.Name];
-            double[] times = samples.Select(s => s.Milliseconds).OrderBy(x => x).ToArray();
-            long[] allocations = samples.Where(s => s.AllocatedBytes >= 0).Select(s => s.AllocatedBytes).OrderBy(x => x).ToArray();
+            double[] times = [.. samples.Select(s => s.Milliseconds).OrderBy(x => x)];
+            long[] allocations = [.. samples.Where(s => s.AllocatedBytes >= 0).Select(s => s.AllocatedBytes).OrderBy(x => x)];
             double mean = times.Average();
             double median = Median(times);
             double p95 = times[(int)Math.Ceiling(times.Length * 0.95) - 1];
@@ -205,27 +205,24 @@ internal static class BenchmarkRunner
         string? parent = Path.GetDirectoryName(Path.GetFullPath(filename));
         if (!string.IsNullOrEmpty(parent)) Directory.CreateDirectory(parent);
         var buffer = variants.ToDictionary(v => v.Name, v => v.Options.BufferSize, StringComparer.Ordinal);
-        using (var csv = new StreamWriter(filename, false, new UTF8Encoding(false)))
-        {
-            csv.WriteLine(string.Join(",", CsvHeader));
-            foreach (BenchmarkSample s in samples)
-            {
-                string[] fields = {
+        using var csv = new StreamWriter(filename, false, new UTF8Encoding(false));
+        csv.WriteLine(string.Join(",", CsvHeader));
+        foreach (BenchmarkSample s in samples) {
+            string[] fields = [
                     s.Workload.ToString(), s.Method, buffer[s.Method].ToString(CI), s.Iteration.ToString(CI),
                     s.Milliseconds.ToString("F6", CI), s.AllocatedBytes >= 0 ? s.AllocatedBytes.ToString(CI) : "",
                     s.Gc0.ToString(CI), s.Gc1.ToString(CI), s.Gc2.ToString(CI),
                     s.Files.ToString(CI), s.Directories.ToString(CI), s.Bytes.ToString(CI),
                     s.Hash.ToString("X16", CI), s.RecordCount.ToString(CI),
                     System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription, root
-                };
-                csv.WriteLine(string.Join(",", fields.Select(EscapeCsv)));
-            }
+                ];
+            csv.WriteLine(string.Join(",", fields.Select(EscapeCsv)));
         }
     }
 
     private static string EscapeCsv(string input)
     {
-        if (input.IndexOfAny(new[] { ',', '"', '\r', '\n' }) < 0) return input;
+        if (input.IndexOfAny([',', '"', '\r', '\n']) < 0) return input;
         return "\"" + input.Replace("\"", "\"\"") + "\"";
     }
 }

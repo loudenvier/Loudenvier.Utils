@@ -35,9 +35,9 @@ internal sealed class BenchmarkOptions
     public string CsvPath = "benchmark-samples.csv";
     public int Samples = 21;
     public int Warmup = 3;
-    public int[] Buffers = { 32 * 1024, 52 * 1024, 65535, 65536 };
-    public Workload[] Workloads = { Workload.Count, Workload.HashFull, Workload.Materialize };
-    public string[] Backends = { "auto", "bcl", "nt", "portable" };
+    public int[] Buffers = [32 * 1024, 52 * 1024, 65535, 65536];
+    public Workload[] Workloads = [Workload.Count, Workload.HashFull, Workload.Materialize];
+    public string[] Backends = ["auto", "bcl", "nt", "portable"];
     public bool ShowHelp;
     public bool ForceGcBeforeWorkload;
 
@@ -142,7 +142,7 @@ internal sealed class BenchmarkOptions
             if (part.Length == 0) continue;
             bool kiB = part.EndsWith("k", StringComparison.OrdinalIgnoreCase) ||
                 part.EndsWith("kib", StringComparison.OrdinalIgnoreCase);
-            string number = kiB ? part.Substring(0, part.Length - (part.EndsWith("kib", StringComparison.OrdinalIgnoreCase) ? 3 : 1)) : part;
+            string number = kiB ? part[..^(part.EndsWith("kib", StringComparison.OrdinalIgnoreCase) ? 3 : 1)] : part;
             if (!int.TryParse(number, NumberStyles.Integer, CultureInfo.InvariantCulture, out int count))
                 throw new ArgumentException("Invalid buffer size: " + part);
             long bytes = (long)count * (kiB ? 1024 : 1);
@@ -151,7 +151,7 @@ internal sealed class BenchmarkOptions
             if (!buffers.Contains((int)bytes)) buffers.Add((int)bytes);
         }
         if (buffers.Count == 0) throw new ArgumentException("At least one buffer size is required.");
-        return buffers.ToArray();
+        return [.. buffers];
     }
     private static string[] SplitDistinct(string input)
     {
@@ -165,16 +165,14 @@ internal sealed class BenchmarkOptions
         var result = new List<Workload>();
         foreach (string s in SplitDistinct(value))
         {
-            Workload w;
-            switch (s)
-            {
-                case "count": w = Workload.Count; break;
-                case "hash": case "hashfull": w = Workload.HashFull; break;
-                case "materialize": case "materialization": w = Workload.Materialize; break;
-                default: throw new ArgumentException("Unknown workload: " + s);
-            }
+            var w = s switch {
+                "count" => Workload.Count,
+                "hash" or "hashfull" => Workload.HashFull,
+                "materialize" or "materialization" => Workload.Materialize,
+                _ => throw new ArgumentException("Unknown workload: " + s),
+            };
             if (!result.Contains(w)) result.Add(w);
         }
-        return result.ToArray();
+        return [.. result];
     }
 }

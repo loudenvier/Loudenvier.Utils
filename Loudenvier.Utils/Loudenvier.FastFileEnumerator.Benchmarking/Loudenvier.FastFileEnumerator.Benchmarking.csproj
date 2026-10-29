@@ -11,6 +11,12 @@
     <AssemblyName>Loudenvier.FastFileEnumerator.Benchmarking</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="PolySharp" Version="1.16.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Loudenvier.FastFileEnumerator\Loudenvier.FastFileEnumerator.csproj" />
   </ItemGroup>
 </Project>

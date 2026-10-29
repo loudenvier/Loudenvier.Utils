@@ -5,23 +5,17 @@ using System.Linq;
 
 namespace Loudenvier.FastFileEnumerator.Benchmarking;
 
-internal sealed class ReferenceSnapshot
+internal sealed class ReferenceSnapshot(Dictionary<string, EntryRecord> entries, long files, long dirs, long bytes, ulong hash)
 {
-    public readonly Dictionary<string, EntryRecord> Entries;
-    public readonly long Files;
-    public readonly long Directories;
-    public readonly long Bytes;
-    public readonly ulong Hash;
+    public readonly Dictionary<string, EntryRecord> Entries = entries;
+    public readonly long Files = files;
+    public readonly long Directories = dirs;
+    public readonly long Bytes = bytes;
+    public readonly ulong Hash = hash;
     // DirectoryInfo on .NET Framework may fail when an enumeration pattern
     // pushes a directory path beyond legacy MAX_PATH (260 including NUL).
-    public readonly bool RequiresExtendedWindowsPaths;
-
-    public ReferenceSnapshot(Dictionary<string, EntryRecord> entries, long files, long dirs, long bytes, ulong hash)
-    {
-        Entries = entries; Files = files; Directories = dirs; Bytes = bytes; Hash = hash;
-        RequiresExtendedWindowsPaths = entries.Values.Any(e =>
+    public readonly bool RequiresExtendedWindowsPaths = entries.Values.Any(e =>
             e.IsDirectory ? e.FullPath.Length + 2 >= 260 : e.FullPath.Length + 1 >= 260);
-    }
 }
 
 internal static class ReferenceScanner
@@ -79,9 +73,9 @@ internal static class ReferenceScanner
         if (fullPath.Length <= normalizedRoot.Length ||
             !fullPath.StartsWith(normalizedRoot, comparison))
             throw new InvalidOperationException("Entry is outside root: " + fullPath);
-        string remainder = fullPath.Substring(normalizedRoot.Length);
+        string remainder = fullPath[normalizedRoot.Length..];
         if (remainder.Length > 0 && (remainder[0] == '/' || remainder[0] == '\\'))
-            remainder = remainder.Substring(1);
+            remainder = remainder[1..];
         else if (!normalizedRoot.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
             throw new InvalidOperationException("Not a descendant of root: " + fullPath);
         return Path.DirectorySeparatorChar == '\\' ? remainder.Replace('\\', '/') : remainder;
