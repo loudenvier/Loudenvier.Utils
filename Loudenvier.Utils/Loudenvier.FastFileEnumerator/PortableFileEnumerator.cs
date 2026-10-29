@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Loudenvier.Utils.IO;
+namespace Loudenvier.IO;
 
 /// <summary>Dependency-free fallback for any platform supported by netstandard2.0.</summary>
 internal static class PortableFileEnumerator

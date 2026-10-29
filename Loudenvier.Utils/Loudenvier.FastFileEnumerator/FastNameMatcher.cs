@@ -1,6 +1,6 @@
 using System;
 
-namespace Loudenvier.Utils.IO;
+namespace Loudenvier.IO;
 
 /// <summary>Allocation-free, identical simple glob semantics on every backend.</summary>
 internal static class FastNameMatcher

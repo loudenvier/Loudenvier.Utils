@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
-namespace Loudenvier.Utils.IO;
+namespace Loudenvier.IO;
 
 /// <summary>
 /// Windows-only NT directory scanner. This file is safe to COMPILE on all targets;

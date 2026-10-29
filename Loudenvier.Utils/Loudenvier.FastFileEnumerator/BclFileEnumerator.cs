@@ -3,7 +3,7 @@ using System;
 using System.IO;
 using System.IO.Enumeration;
 
-namespace Loudenvier.Utils.IO;
+namespace Loudenvier.IO;
 
 internal static class BclFileEnumerator
 {

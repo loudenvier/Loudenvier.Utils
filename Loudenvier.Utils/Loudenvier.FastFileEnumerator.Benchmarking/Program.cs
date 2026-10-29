@@ -1,33 +1,33 @@
 using System;
 
-namespace Loudenvier.FastFileEnumerator.Benchmarking
+namespace Loudenvier.FastFileEnumerator.Benchmarking;
+
+internal static class Program
 {
-    internal static class Program
+    public static int Main(string[] args)
     {
-        public static int Main(string[] args)
+        try
         {
-            try
+            BenchmarkOptions options = BenchmarkOptions.Parse(args);
+            if (options.ShowHelp)
             {
-                BenchmarkOptions options = BenchmarkOptions.Parse(args);
-                if (options.ShowHelp)
-                {
-                    Help();
-                    return 0;
-                }
-                BenchmarkRunner.Execute(options);
+                Help();
                 return 0;
             }
-            catch (Exception error)
-            {
-                Console.Error.WriteLine("BENCHMARK FAILED: " + error);
-                Console.Error.WriteLine("Run with --help for options.");
-                return 1;
-            }
+            BenchmarkRunner.Execute(options);
+            return 0;
         }
-
-        private static void Help()
+        catch (Exception error)
         {
-            Console.WriteLine(@"Loudenvier.FastFileEnumerator.Benchmarking
+            Console.Error.WriteLine("BENCHMARK FAILED: " + error);
+            Console.Error.WriteLine("Run with --help for options.");
+            return 1;
+        }
+    }
+
+    private static void Help()
+    {
+        Console.WriteLine(@"Loudenvier.FastFileEnumerator.Benchmarking
 
 Usage:
   dotnet run -c Release -f net10.0 -- <root> [options]
@@ -54,6 +54,5 @@ Linux/macOS + netstandard2.0 host: Auto (Portable), Portable.
 
 No NuGet packages are added by this benchmark. It references the real Loudenvier.Utils project.
 A complete independent reference validation runs before timing.");
-        }
     }
 }

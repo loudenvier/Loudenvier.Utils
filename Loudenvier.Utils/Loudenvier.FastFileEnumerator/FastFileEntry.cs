@@ -4,7 +4,7 @@ using System.IO;
 using System.IO.Enumeration;
 #endif
 
-namespace Loudenvier.Utils.IO;
+namespace Loudenvier.IO;
 
 /// <summary>
 /// A transient view of a directory entry. Its spans are valid ONLY during the

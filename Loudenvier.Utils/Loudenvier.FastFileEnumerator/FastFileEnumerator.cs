@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace Loudenvier.Utils.IO;
+namespace Loudenvier.IO;
 
 /// <summary>
 /// Synchronous low-allocation filesystem enumeration. On .NET 6+ Auto uses

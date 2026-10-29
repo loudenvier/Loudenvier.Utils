@@ -1,4 +1,4 @@
-namespace Loudenvier.Utils.IO;
+namespace Loudenvier.IO;
 
 /// <summary>Backend selection. Auto uses the BCL on .NET 6+,
 /// native NT on Windows with net472/netstandard2.0, and the portable fallback otherwise.</summary>
