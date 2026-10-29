@@ -25,8 +25,8 @@ public static class ByteSequenceParser
     /// <param name="input">The raw string sequence to be parsed.</param>
     /// <returns>A byte array with the exact size of the parsed tokens.</returns>
     /// <exception cref="FormatException">Thrown when a string literal is not closed properly or a numeric token is invalid/out of bounds.</exception>
-    public static byte[] Parse(string input) {
-        if (string.IsNullOrWhiteSpace(input)) return Array.Empty<byte>();
+    public static byte[] Parse(string? input) {
+        if (string.IsNullOrWhiteSpace(input)) return [];
 
         var bytes = new List<byte>(16); // optimizes for small sequences (the most common usecase)
         ReadOnlySpan<char> span = input.AsSpan();

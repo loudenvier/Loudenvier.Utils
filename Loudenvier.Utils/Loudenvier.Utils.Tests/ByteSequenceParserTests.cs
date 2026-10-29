@@ -95,7 +95,7 @@ public class ByteSequenceParserTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("\t\n")]
-    public void Parse_EmptyOrWhitespaceInput_ReturnsEmptyArray(string input) {
+    public void Parse_EmptyOrWhitespaceInput_ReturnsEmptyArray(string? input) {
         var result = ByteSequenceParser.Parse(input);
         Assert.Empty(result);
     }

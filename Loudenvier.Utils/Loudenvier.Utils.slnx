@@ -1,0 +1,13 @@
+<Solution>
+  <Project Path="Loudenvier.FastFileEnumerator.Benchmarking/Loudenvier.FastFileEnumerator.Benchmarking.csproj" />
+  <Project Path="Loudenvier.FastFileEnumerator/Loudenvier.FastFileEnumerator.csproj" Id="879a263c-d0bb-4c3a-a699-60317ba8ff07" />
+  <Project Path="Loudenvier.Utils.Dapper/Loudenvier.Utils.Dapper.csproj" />
+  <Project Path="Loudenvier.Utils.Json/Loudenvier.Utils.Json.csproj" />
+  <Project Path="Loudenvier.Utils.Networking/Loudenvier.Utils.Networking.csproj" />
+  <Project Path="Loudenvier.Utils.Sql/Loudenvier.Utils.Sql.csproj" />
+  <Project Path="Loudenvier.Utils.Tests/Loudenvier.Utils.Tests.csproj" />
+  <Project Path="Loudenvier.Utils.WebForms/Loudenvier.Utils.WebForms.csproj" Id="ae8b6942-0a15-4283-8336-6824752e11c9" />
+  <Project Path="Loudenvier.Utils/Loudenvier.Utils.csproj" />
+  <Project Path="tests/Loudenvier.FastFileEnumerator.LegacySmoke/Loudenvier.FastFileEnumerator.LegacySmoke.csproj" />
+  <Project Path="tests/Loudenvier.FastFileEnumerator.SmokeTests/Loudenvier.FastFileEnumerator.SmokeTests.csproj" />
+</Solution>
