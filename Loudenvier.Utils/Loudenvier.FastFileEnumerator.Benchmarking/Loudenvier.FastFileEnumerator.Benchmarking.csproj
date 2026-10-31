@@ -8,6 +8,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <Optimize>true</Optimize>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>Loudenvier.FastFileEnumerator.Benchmarking</AssemblyName>
   </PropertyGroup>
   <ItemGroup>

@@ -1,5 +1,8 @@
 using System;
 using System.IO;
+#if !NET6_0_OR_GREATER
+using System.Buffers;
+#endif
 #if NET6_0_OR_GREATER
 using System.IO.Enumeration;
 #endif
@@ -119,8 +122,116 @@ public readonly ref struct FastFileEntry
         }
     }
 
-    /// <summary>Materialize the full path, allocating strings only when requested.</summary>
-    public string GetFullPath() => Path.Combine(_directory.ToString(), _fileName.ToString());
+    /// <summary>
+    /// Materialize the full path without allocating separate directory and file-name strings.
+    /// Like <see cref="Path.Combine(string, string)"/>, an empty component or a rooted
+    /// second component retains its usual behavior.
+    /// </summary>
+    public unsafe string GetFullPath()
+    {
+        if (_directory.IsEmpty) return _fileName.ToString();
+        if (_fileName.IsEmpty) return _directory.ToString();
+
+        // An actual file name from an enumerator cannot be rooted. Preserve
+        // Path.Combine semantics for synthetic/exceptional input nevertheless.
+        if (MayBeRooted(_fileName))
+            return Path.Combine(_directory.ToString(), _fileName.ToString());
+
+        char last = _directory[_directory.Length - 1];
+
+        // A trailing volume separator (':' on Windows) is not handled
+        // consistently by Path.Combine across runtime generations.
+        // For example, modern .NET inserts a slash after "folder:", whereas
+        // .NET Framework may not. This case cannot occur at the end of an
+        // ordinary fully-qualified enumerated directory. Use the runtime's
+        // own semantics for it without affecting the fast path.
+        if (last == Path.VolumeSeparatorChar &&
+            last != Path.DirectorySeparatorChar &&
+            last != Path.AltDirectorySeparatorChar)
+            return Path.Combine(_directory.ToString(), _fileName.ToString());
+
+        bool addSeparator = last != Path.DirectorySeparatorChar &&
+                            last != Path.AltDirectorySeparatorChar;
+        int totalLength = checked(_directory.Length + _fileName.Length + (addSeparator ? 1 : 0));
+
+#if NET6_0_OR_GREATER
+        // string.Create allocates the output once and fills it directly.
+        // Spans cannot be generic state arguments; pin them for the duration
+        // of the synchronous string.Create callback instead.
+        fixed (char* directory = _directory)
+        fixed (char* fileName = _fileName)
+        {
+            var state = new PathCreateState(directory, _directory.Length,
+                fileName, _fileName.Length, addSeparator);
+            return string.Create(totalLength, state, static (destination, source) =>
+            {
+                var dir = new ReadOnlySpan<char>(source.Directory, source.DirectoryLength);
+                var name = new ReadOnlySpan<char>(source.FileName, source.FileNameLength);
+                FillPath(destination, dir, name, source.AddSeparator);
+            });
+        }
+#else
+        // String.Create is not part of netstandard2.0 or .NET Framework 4.7.2.
+        // For ordinary paths, stackalloc plus the pointer string constructor
+        // creates only the final managed string, as validated in the benchmark.
+        const int StackChars = 2048;
+        if (totalLength <= StackChars)
+        {
+            char* chars = stackalloc char[totalLength];
+            FillPath(new Span<char>(chars, totalLength), _directory, _fileName, addSeparator);
+            return new string(chars, 0, totalLength);
+        }
+
+        // Very long paths must not exhaust the stack. Rent an intermediate
+        // buffer; no intermediate managed strings are created.
+        char[] rented = ArrayPool<char>.Shared.Rent(totalLength);
+        try
+        {
+            FillPath(rented.AsSpan(0, totalLength), _directory, _fileName, addSeparator);
+            return new string(rented, 0, totalLength);
+        }
+        finally { ArrayPool<char>.Shared.Return(rented); }
+#endif
+    }
+
+    private static void FillPath(Span<char> destination, ReadOnlySpan<char> directory,
+        ReadOnlySpan<char> fileName, bool addSeparator)
+    {
+        directory.CopyTo(destination);
+        int offset = directory.Length;
+        if (addSeparator) destination[offset++] = Path.DirectorySeparatorChar;
+        fileName.CopyTo(destination.Slice(offset));
+    }
+
+    private static bool MayBeRooted(ReadOnlySpan<char> fileName)
+    {
+        char first = fileName[0]; // Called only when nonempty.
+        return first == Path.DirectorySeparatorChar ||
+               first == Path.AltDirectorySeparatorChar ||
+               (Path.DirectorySeparatorChar == '\\' && fileName.Length >= 2 &&
+                fileName[1] == Path.VolumeSeparatorChar);
+    }
+
+#if NET6_0_OR_GREATER
+    private readonly unsafe struct PathCreateState
+    {
+        internal readonly char* Directory;
+        internal readonly int DirectoryLength;
+        internal readonly char* FileName;
+        internal readonly int FileNameLength;
+        internal readonly bool AddSeparator;
+
+        internal PathCreateState(char* directory, int directoryLength, char* fileName,
+            int fileNameLength, bool addSeparator)
+        {
+            Directory = directory;
+            DirectoryLength = directoryLength;
+            FileName = fileName;
+            FileNameLength = fileNameLength;
+            AddSeparator = addSeparator;
+        }
+    }
+#endif
 }
 
 /// <summary>

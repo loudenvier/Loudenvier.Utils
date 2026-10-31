@@ -78,6 +78,18 @@ internal static class BenchmarkRunner
 #endif
         Console.WriteLine("Reference: " + baseline.Directories + " directories; " + baseline.Files +
             " files; " + baseline.Bytes + " logical bytes; " + baseline.Entries.Count + " entries.");
+        if (options.DiagnosticsFocusedOnly)
+        {
+            Console.WriteLine("Running FOCUSED JIT / string allocation diagnostics without normal benchmark.");
+            FocusedDiagnosticRunner.Execute(options, baseline);
+            return;
+        }
+        if (options.DiagnosticsOnly)
+        {
+            Console.WriteLine("Running managed/JIT/allocation diagnostics without the normal benchmark.");
+            DiagnosticRunner.Execute(options, baseline);
+            return;
+        }
         Console.WriteLine("Active variants (" + variants.Count + " methods per round): " +
             string.Join(", ", variants.Select(v => v.Name)));
         Console.WriteLine("Validating all methods: full paths, attributes, sizes, totals and hash...");
@@ -122,6 +134,8 @@ internal static class BenchmarkRunner
         }
         WriteCsv(options.CsvPath, options.Root, variants, allSamples);
         Console.WriteLine("CSV: " + Path.GetFullPath(options.CsvPath));
+        if (options.Diagnostics)
+            DiagnosticRunner.Execute(options, baseline);
         Console.WriteLine("Done. Data blackhole: " + Interlocked.Read(ref _sink).ToString("X16", CI));
     }
 

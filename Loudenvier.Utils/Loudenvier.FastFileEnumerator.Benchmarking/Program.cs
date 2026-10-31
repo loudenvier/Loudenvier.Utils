@@ -43,6 +43,13 @@ Options:
   --warmup 3                        Warmup rounds per workload.
   --csv results.csv                 Raw measurements output (UTF-8 CSV).
   --gc-between-workloads           Full GC between workloads only, never per sample.
+  --diagnostics                    Run managed diagnostics after normal benchmark.
+  --diagnostics-only               Run the original diagnostic suites (no normal measurements).
+  --diagnostics-focused-only       NEW: controlled FNV/JIT and path-allocation diagnostics only.
+                                   Writes *-diag-focused.csv; library source unchanged.
+  --diag-backend nt                Diagnostic enumeration backend: auto,bcl,nt,portable.
+                                   Default: nt on Windows; use bcl elsewhere.
+  --diag-buffer 52k                Diagnostic enumeration buffer (default: 52 KiB).
   --help                            Show this help.
 
 Windows + net10.0: Auto, BCL, WindowsNt, Portable.
@@ -52,7 +59,7 @@ skipped on long-path trees because the production fallback uses legacy Directory
 Linux/macOS + net10.0: Auto, BCL, Portable.
 Linux/macOS + netstandard2.0 host: Auto (Portable), Portable.
 
-No NuGet packages are added by this benchmark. It references the real Loudenvier.Utils project.
+No new NuGet packages are added. The benchmark references the independent FastFileEnumerator project.
 A complete independent reference validation runs before timing.");
     }
 }

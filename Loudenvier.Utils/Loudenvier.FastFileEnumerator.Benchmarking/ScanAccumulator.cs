@@ -102,6 +102,15 @@ internal static class PathHasher
         return hash;
     }
 
+    // Diagnostic kernel: same UTF-16 byte encoding and multiplication as EntryHash,
+    // but WITHOUT paths split into parts or metadata. Never used by the library.
+    internal static ulong CharsOnly(ReadOnlySpan<char> text)
+    {
+        ulong hash = Offset;
+        AppendChars(ref hash, text);
+        return hash;
+    }
+
     private static void AppendChars(ref ulong hash, ReadOnlySpan<char> value)
     {
         for (int i = 0; i < value.Length; i++)

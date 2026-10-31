@@ -40,18 +40,26 @@ internal sealed class BenchmarkOptions
     public string[] Backends = ["auto", "bcl", "nt", "portable"];
     public bool ShowHelp;
     public bool ForceGcBeforeWorkload;
+    public bool Diagnostics;
+    public bool DiagnosticsOnly;
+    public bool DiagnosticsFocusedOnly;
+    public string DiagnosticBackend = "nt";
+    public int DiagnosticBufferBytes = 52 * 1024;
 
     public static BenchmarkOptions Parse(string[] args)
     {
         var result = new BenchmarkOptions();
         var valid = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
-            "--samples", "--warmup", "--buffers", "--backends", "--workloads", "--csv", "--gc-between-workloads"
+            "--samples", "--warmup", "--buffers", "--backends", "--workloads", "--csv", "--gc-between-workloads", "--diag-backend", "--diag-buffer"
         };
         for (int i = 0; i < args.Length; ++i)
         {
             string arg = args[i];
             if (arg == "--help" || arg == "-h" || arg == "/?") { result.ShowHelp = true; return result; }
             if (arg == "--gc-between-workloads") { result.ForceGcBeforeWorkload = true; continue; }
+            if (arg == "--diagnostics") { result.Diagnostics = true; continue; }
+            if (arg == "--diagnostics-only") { result.DiagnosticsOnly = true; continue; }
+            if (arg == "--diagnostics-focused-only") { result.DiagnosticsFocusedOnly = true; continue; }
             if (!arg.StartsWith("--", StringComparison.Ordinal))
             {
                 if (result.Root.Length != 0) throw new ArgumentException("Only one root path can be specified.");
@@ -66,6 +74,8 @@ internal sealed class BenchmarkOptions
                 case "--samples": result.Samples = Positive(value, arg); break;
                 case "--warmup": result.Warmup = NonNegative(value, arg); break;
                 case "--csv": result.CsvPath = value; break;
+                case "--diag-backend": result.DiagnosticBackend = value.Trim().ToLowerInvariant(); break;
+                case "--diag-buffer": result.DiagnosticBufferBytes = ParseBuffers(value) is { Length: 1 } b ? b[0] : throw new ArgumentException("--diag-buffer needs exactly one value."); break;
                 case "--buffers": result.Buffers = ParseBuffers(value); break;
                 case "--backends": result.Backends = SplitDistinct(value); break;
                 case "--workloads": result.Workloads = ParseWorkloads(value); break;
@@ -75,6 +85,9 @@ internal sealed class BenchmarkOptions
         result.Root = Path.GetFullPath(result.Root);
         if (!Directory.Exists(result.Root)) throw new DirectoryNotFoundException(result.Root);
         if (string.IsNullOrWhiteSpace(result.CsvPath)) throw new ArgumentException("CSV path cannot be empty.");
+        if (result.DiagnosticBackend != "nt" && result.DiagnosticBackend != "bcl" &&
+            result.DiagnosticBackend != "portable" && result.DiagnosticBackend != "auto")
+            throw new ArgumentException("--diag-backend must be auto, bcl, nt or portable.");
         return result;
     }
 
