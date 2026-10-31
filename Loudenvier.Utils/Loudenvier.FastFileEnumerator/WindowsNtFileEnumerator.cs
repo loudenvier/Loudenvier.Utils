@@ -12,7 +12,7 @@ namespace Loudenvier.IO;
 /// Windows-only NT directory scanner. This file is safe to COMPILE on all targets;
 /// no native entry point is resolved unless the WindowsNt backend is selected.
 /// </summary>
-internal static unsafe class WindowsNtFileEnumerator
+internal static unsafe partial class WindowsNtFileEnumerator
 {
     private const uint FileListDirectory = 0x00000001;
     private const uint ShareReadWriteDelete = 0x00000007;
@@ -156,6 +156,86 @@ internal static unsafe class WindowsNtFileEnumerator
             }
         }
         finally { Marshal.FreeHGlobal(allocation); }
+    }
+
+    /// <summary>Scans exactly one directory, using a buffer owned by the worker.</summary>
+    internal static void ScanDirectory(FastFileEnumerator.Configuration config, string directory,
+        bool isRoot, IntPtr allocation, FastFileVisitor visitor, Action<string> addChild)
+    {
+        byte* buffer = (byte*)allocation.ToPointer();
+                using SafeFileHandle handle = CreateFile(ToExtendedPath(directory),
+                    FileListDirectory, ShareReadWriteDelete, IntPtr.Zero,
+                    OpenExisting, FileFlagBackupSemantics, IntPtr.Zero);
+                if (handle.IsInvalid) {
+                    int error = Marshal.GetLastWin32Error();
+                    if (config.IgnoreInaccessible && !isRoot && error == ErrorAccessDenied)
+                        return;
+                    throw new IOException("Cannot open directory '" + directory + "'.",
+                        new Win32Exception(error));
+                }
+
+                bool restart = true;
+                while (true) {
+                    int status = NtQueryDirectoryFile(handle, IntPtr.Zero, IntPtr.Zero,
+                        IntPtr.Zero, out IoStatusBlock io, buffer, (uint)config.BufferSize,
+                        FullDirectoryInformation, false, IntPtr.Zero, restart);
+                    restart = false;
+                    if (status == StatusNoMoreFiles || status == StatusNoSuchFile)
+                        break;
+                    if (status == StatusAccessDenied && config.IgnoreInaccessible && !isRoot)
+                        break;
+                    if (status != 0)
+                        throw new IOException("NtQueryDirectoryFile failed for '" +
+                            directory + "': NTSTATUS=0x" + status.ToString("X8") + ".");
+
+                    long byteCount = io.Information.ToInt64();
+                    if (byteCount < RecordHeaderBytes || byteCount > config.BufferSize)
+                        throw new IOException("Unexpected byte count from NtQueryDirectoryFile.");
+                    int returnedBytes = (int)byteCount;
+                    int position = 0;
+                    while (true) {
+                        if (returnedBytes - position < RecordHeaderBytes)
+                            throw new IOException("Truncated FILE_FULL_DIR_INFORMATION record.");
+
+                        byte* record = buffer + position;
+                        uint nextOffset = *(uint*)(record + 0);
+                        long creation = *(long*)(record + 8);
+                        long access = *(long*)(record + 16);
+                        long write = *(long*)(record + 24);
+                        long endOfFile = *(long*)(record + 40);
+                        FileAttributes attributes = (FileAttributes)(*(uint*)(record + 56));
+                        uint nameByteCount = *(uint*)(record + 60);
+                        if ((nameByteCount & 1) != 0 ||
+                            nameByteCount > (uint)(returnedBytes - position - RecordHeaderBytes))
+                            throw new IOException("Invalid filename length in native directory record.");
+
+                        var name = new ReadOnlySpan<char>((char*)(record + RecordHeaderBytes),
+                            (int)(nameByteCount / 2));
+                        if (!name.SequenceEqual(".".AsSpan()) &&
+                            !name.SequenceEqual("..".AsSpan())) {
+                            bool isDirectory = (attributes & FileAttributes.Directory) != 0;
+                            if (config.Recursive && isDirectory &&
+                                (attributes & FileAttributes.ReparsePoint) == 0) {
+                                // Only traversed directory names need to become strings.
+                                string childName = name.ToString();
+                                addChild(AppendNative(directory, childName));
+                            }
+
+                            if (config.Include(isDirectory, name)) {
+                                var entry = new FastFileEntry(directory.AsSpan(), name,
+                                    isDirectory ? 0 : endOfFile, attributes,
+                                    creation, access, write);
+                                visitor(in entry);
+                            }
+                        }
+
+                        if (nextOffset == 0) break;
+                        if (nextOffset < RecordHeaderBytes ||
+                            nextOffset > (uint)(returnedBytes - position))
+                            throw new IOException("Invalid NextEntryOffset in native directory record.");
+                        position += checked((int)nextOffset);
+                    }
+                }
     }
 
     // Used only when Framework's Path.GetFullPath rejects a long Windows root.

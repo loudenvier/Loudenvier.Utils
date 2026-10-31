@@ -72,4 +72,59 @@ internal static class PortableFileEnumerator
             }
         }
     }
+    /// <summary>Enumerates only one directory and reports traversable children.</summary>
+    internal static void ScanDirectory(FastFileEnumerator.Configuration config, string directory,
+        bool isRoot, FastFileVisitor visitor, Action<string> addChild)
+    {
+        IEnumerator<FileSystemInfo> iterator;
+        try
+        {
+            iterator = new DirectoryInfo(directory)
+                .EnumerateFileSystemInfos("*", SearchOption.TopDirectoryOnly).GetEnumerator();
+        }
+        catch (UnauthorizedAccessException) when (config.IgnoreInaccessible && !isRoot) { return; }
+        catch (IOException) when (config.IgnoreInaccessible && !isRoot) { return; }
+
+        using (iterator)
+        {
+            while (true)
+            {
+                FileSystemInfo info;
+                try
+                {
+                    if (!iterator.MoveNext()) break;
+                    info = iterator.Current;
+                }
+                catch (UnauthorizedAccessException) when (config.IgnoreInaccessible && !isRoot) { break; }
+                catch (IOException) when (config.IgnoreInaccessible && !isRoot) { break; }
+
+                FileAttributes attrs;
+                try { attrs = info.Attributes; }
+                catch (UnauthorizedAccessException) when (config.IgnoreInaccessible && !isRoot) { continue; }
+                catch (IOException) when (config.IgnoreInaccessible && !isRoot) { continue; }
+                bool isDirectory = (attrs & FileAttributes.Directory) != 0;
+                if (isDirectory && (attrs & FileAttributes.ReparsePoint) == 0)
+                    addChild(info.FullName);
+                ReadOnlySpan<char> name = info.Name.AsSpan();
+                if (!config.Include(isDirectory, name)) continue;
+
+                long length;
+                DateTime created, accessed, written;
+                try
+                {
+                    length = isDirectory ? 0 : ((FileInfo)info).Length;
+                    created = info.CreationTimeUtc;
+                    accessed = info.LastAccessTimeUtc;
+                    written = info.LastWriteTimeUtc;
+                }
+                catch (UnauthorizedAccessException) when (config.IgnoreInaccessible && !isRoot) { continue; }
+                catch (IOException) when (config.IgnoreInaccessible && !isRoot) { continue; }
+
+                var entry = new FastFileEntry(directory.AsSpan(), name, length, attrs,
+                    created, accessed, written);
+                visitor(in entry);
+            }
+        }
+    }
+
 }

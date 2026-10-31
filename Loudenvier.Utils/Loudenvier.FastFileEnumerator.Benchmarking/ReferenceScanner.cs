@@ -83,40 +83,68 @@ internal static class ReferenceScanner
 
     internal static void Validate(string root, BackendVariant variant, ReferenceSnapshot expected)
     {
-        var accumulator = new ScanAccumulator(root, Workload.Materialize);
-        IO.FastFileEnumerator.Enumerate(root, accumulator.Callback, variant.Options);
-        AssertTotals(variant.Name, accumulator, expected);
+        ScanAccumulator[] scans = Scan(root, variant, Workload.Materialize);
+        long files = 0, dirs = 0, bytes = 0;
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        foreach (EntryRecord entry in accumulator.Records!)
+        foreach (ScanAccumulator scan in scans)
         {
-            string key = ToRelative(root, entry.FullPath);
-            if (!seen.Add(key)) throw new InvalidOperationException(variant.Name + " returned duplicate entry: " + key);
-            if (!expected.Entries.TryGetValue(key, out EntryRecord actual))
-                throw new InvalidOperationException(variant.Name + " returned unexpected entry: " + key);
-            if (entry.IsDirectory != actual.IsDirectory || entry.Length != actual.Length || entry.Attributes != actual.Attributes)
-                throw new InvalidOperationException(variant.Name + " metadata mismatch on " + key +
-                    ": expected attrs=" + actual.Attributes + " length=" + actual.Length +
-                    ", actual attrs=" + entry.Attributes + " length=" + entry.Length);
+            files += scan.Files; dirs += scan.Directories; bytes += scan.Bytes;
+            foreach (EntryRecord entry in scan.Records!)
+            {
+                string key = ToRelative(root, entry.FullPath);
+                if (!seen.Add(key)) throw new InvalidOperationException(variant.Name + " returned duplicate entry: " + key);
+                if (!expected.Entries.TryGetValue(key, out EntryRecord actual))
+                    throw new InvalidOperationException(variant.Name + " returned unexpected entry: " + key);
+                if (entry.IsDirectory != actual.IsDirectory || entry.Length != actual.Length || entry.Attributes != actual.Attributes)
+                    throw new InvalidOperationException(variant.Name + " metadata mismatch on " + key +
+                        ": expected attrs=" + actual.Attributes + " length=" + actual.Length +
+                        ", actual attrs=" + entry.Attributes + " length=" + entry.Length);
+            }
         }
+        AssertTotals(variant.Name, files, dirs, bytes, expected);
         if (seen.Count != expected.Entries.Count)
         {
             foreach (string key in expected.Entries.Keys)
                 if (!seen.Contains(key)) throw new InvalidOperationException(variant.Name + " missed entry: " + key);
         }
 
-        var hashed = new ScanAccumulator(root, Workload.HashFull);
-        IO.FastFileEnumerator.Enumerate(root, hashed.Callback, variant.Options);
-        AssertTotals(variant.Name + " (hash)", hashed, expected);
-        if (hashed.Hash != expected.Hash)
+        ScanAccumulator[] hashScans = Scan(root, variant, Workload.HashFull);
+        files = dirs = bytes = 0;
+        ulong hash = 0;
+        foreach (ScanAccumulator scan in hashScans)
+        {
+            files += scan.Files; dirs += scan.Directories; bytes += scan.Bytes;
+            hash = unchecked(hash + scan.Hash);
+        }
+        AssertTotals(variant.Name + " (hash)", files, dirs, bytes, expected);
+        if (hash != expected.Hash)
             throw new InvalidOperationException(variant.Name + " hash differs from independent reference: " +
-                hashed.Hash.ToString("X16") + " != " + expected.Hash.ToString("X16"));
+                hash.ToString("X16") + " != " + expected.Hash.ToString("X16"));
     }
 
-    private static void AssertTotals(string name, ScanAccumulator actual, ReferenceSnapshot expected)
+    private static ScanAccumulator[] Scan(string root, BackendVariant variant, Workload workload)
     {
-        if (actual.Files != expected.Files || actual.Directories != expected.Directories || actual.Bytes != expected.Bytes)
+        if (variant.ParallelWorkers == 0)
+        {
+            var scan = new ScanAccumulator(root, workload);
+            IO.FastFileEnumerator.Enumerate(root, scan.Callback, variant.Options);
+            return [scan];
+        }
+        var workers = new ScanAccumulator[variant.ParallelWorkers];
+        IO.FastFileEnumerator.EnumerateParallel(root, index =>
+        {
+            var scan = new ScanAccumulator(root, workload);
+            workers[index] = scan;
+            return scan.Callback;
+        }, variant.Options, variant.ParallelWorkers);
+        return workers;
+    }
+
+    private static void AssertTotals(string name, long files, long dirs, long bytes, ReferenceSnapshot expected)
+    {
+        if (files != expected.Files || dirs != expected.Directories || bytes != expected.Bytes)
             throw new InvalidOperationException(name + " totals mismatch. Expected " + expected.Directories +
-                " dirs, " + expected.Files + " files, " + expected.Bytes + " bytes; got " + actual.Directories +
-                " dirs, " + actual.Files + " files, " + actual.Bytes + " bytes.");
+                " dirs, " + expected.Files + " files, " + expected.Bytes + " bytes; got " + dirs +
+                " dirs, " + files + " files, " + bytes + " bytes.");
     }
 }

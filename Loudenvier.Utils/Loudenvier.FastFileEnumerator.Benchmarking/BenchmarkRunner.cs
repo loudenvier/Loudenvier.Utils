@@ -25,6 +25,8 @@ internal sealed class BenchmarkSample
     public long Bytes;
     public ulong Hash;
     public int RecordCount;
+    public int ParallelWorkers;
+    public string AllocationScope = "CurrentThread";
 }
 
 internal static class BenchmarkRunner
@@ -33,7 +35,8 @@ internal static class BenchmarkRunner
     private static readonly CultureInfo CI = CultureInfo.InvariantCulture;
     private static readonly string[] CsvHeader = [
         "Workload", "Backend", "BufferBytes", "Iteration", "ElapsedMs", "ManagedBytes", "GC0", "GC1", "GC2",
-        "Files", "Directories", "LogicalBytes", "HashHex", "MaterializedRecords", "Runtime", "Root"
+        "Files", "Directories", "LogicalBytes", "HashHex", "MaterializedRecords", "Runtime", "Root",
+        "Workers", "AllocationScope"
     ];
 
     internal static void Execute(BenchmarkOptions options)
@@ -47,7 +50,9 @@ internal static class BenchmarkRunner
         Console.WriteLine("Samples: " + options.Samples + "; warmup: " + options.Warmup +
             "; initially selected methods: " + variants.Count);
         Console.WriteLine("Hash: built-in benchmark FNV-1a 64-bit over relative path + size + attributes + kind (not XXH3).");
-        Console.WriteLine("Managed allocation counters: current thread; GC counters: process-wide.");
+        Console.WriteLine("Managed allocations: current thread for sequential/P1; " +
+            "multi-thread scan is process-wide on .NET 10 and N/A on Framework.");
+        Console.WriteLine("GC counters: process-wide; parallel workers use independent accumulators.");
         Console.WriteLine("All backends traverse directories but never follow directory reparse points.");
 
         Console.WriteLine();
@@ -154,45 +159,85 @@ internal static class BenchmarkRunner
     private static BenchmarkSample RunOne(string root, BackendVariant variant, Workload workload,
         ReferenceSnapshot expected, int iteration)
     {
-        // Include the accumulator and delegate allocations in the reported scan cost.
-        long allocationStart = AllocationCounter.Read();
+        // Per-worker callback factories eliminate hot-path contention; only the
+        // post-scan reduction requires visiting each worker's accumulator.
+        bool parallel = variant.ParallelWorkers > 1;
+        string allocationScope;
+        long allocationStart;
+#if NET6_0_OR_GREATER
+        allocationScope = parallel ? "Process" : "CurrentThread";
+        allocationStart = parallel ? GC.GetTotalAllocatedBytes(true) : AllocationCounter.Read();
+#else
+        allocationScope = parallel ? "N/A" : "CurrentThread";
+        allocationStart = parallel ? -1 : AllocationCounter.Read();
+#endif
         int gc0 = GC.CollectionCount(0), gc1 = GC.CollectionCount(1), gc2 = GC.CollectionCount(2);
         long start = Stopwatch.GetTimestamp();
-        var scanner = new ScanAccumulator(root, workload);
-        IO.FastFileEnumerator.Enumerate(root, scanner.Callback, variant.Options);
+        ScanAccumulator[] accumulators;
+        if (variant.ParallelWorkers == 0)
+        {
+            var scanner = new ScanAccumulator(root, workload);
+            IO.FastFileEnumerator.Enumerate(root, scanner.Callback, variant.Options);
+            accumulators = [scanner];
+        }
+        else
+        {
+            int count = variant.ParallelWorkers;
+            accumulators = new ScanAccumulator[count];
+            IO.FastFileEnumerator.EnumerateParallel(root, index =>
+            {
+                var scanner = new ScanAccumulator(root, workload);
+                accumulators[index] = scanner;
+                return scanner.Callback;
+            }, variant.Options, count);
+        }
         long stop = Stopwatch.GetTimestamp();
-        long allocationEnd = AllocationCounter.Read();
+#if NET6_0_OR_GREATER
+        long allocationEnd = parallel ? GC.GetTotalAllocatedBytes(true) : AllocationCounter.Read();
+#else
+        long allocationEnd = parallel ? -1 : AllocationCounter.Read();
+#endif
         int afterGc0 = GC.CollectionCount(0), afterGc1 = GC.CollectionCount(1), afterGc2 = GC.CollectionCount(2);
 
-        // Validation after the clock has stopped. Only validate materialized
-        // contents in the independent preflight (not per timed sample).
-        if (scanner.Files != expected.Files || scanner.Directories != expected.Directories || scanner.Bytes != expected.Bytes)
+        // Reduce only AFTER the stopwatch stops. No per-file atomics, locks,
+        // shared List<T>, or shared hash accumulator are used by the benchmark.
+        long files = 0, directories = 0, bytes = 0;
+        ulong hash = 0;
+        int recordCount = 0;
+        foreach (ScanAccumulator scanner in accumulators)
+        {
+            files += scanner.Files;
+            directories += scanner.Directories;
+            bytes = unchecked(bytes + scanner.Bytes);
+            hash = unchecked(hash + scanner.Hash);
+            recordCount += scanner.Records?.Count ?? 0;
+            GC.KeepAlive(scanner);
+        }
+        if (files != expected.Files || directories != expected.Directories || bytes != expected.Bytes)
             throw new InvalidOperationException(variant.Name + " totals changed during benchmark; filesystem may have changed.");
-        if (workload == Workload.HashFull && scanner.Hash != expected.Hash)
+        if (workload == Workload.HashFull && hash != expected.Hash)
             throw new InvalidOperationException(variant.Name + " hash changed during benchmark; filesystem may have changed.");
-        int recordCount = scanner.Records == null ? 0 : scanner.Records.Count;
         if (workload == Workload.Materialize && recordCount != expected.Entries.Count)
             throw new InvalidOperationException(variant.Name + " materialization count changed.");
 
-        // Explicitly consume results, preventing elision by JIT and ensuring
-        // materialized records stay alive until after the stopwatch.
-        Interlocked.Exchange(ref _sink, unchecked((long)(scanner.Hash ^ (ulong)scanner.Bytes ^
-            (ulong)scanner.Files ^ ((ulong)scanner.Directories << 32) ^ (ulong)recordCount)));
-        GC.KeepAlive(scanner);
+        Interlocked.Exchange(ref _sink, unchecked((long)(hash ^ (ulong)bytes ^
+            (ulong)files ^ ((ulong)directories << 32) ^ (ulong)recordCount)));
+        GC.KeepAlive(accumulators);
         return new BenchmarkSample
         {
             Workload = workload, Method = variant.Name, Iteration = iteration,
+            ParallelWorkers = variant.ParallelWorkers, AllocationScope = allocationScope,
             Milliseconds = (stop - start) * 1000.0 / Stopwatch.Frequency,
             AllocatedBytes = allocationStart < 0 || allocationEnd < 0 ? -1 : allocationEnd - allocationStart,
             Gc0 = afterGc0 - gc0, Gc1 = afterGc1 - gc1, Gc2 = afterGc2 - gc2,
-            Files = scanner.Files, Directories = scanner.Directories, Bytes = scanner.Bytes,
-            Hash = scanner.Hash, RecordCount = recordCount
+            Files = files, Directories = directories, Bytes = bytes,
+            Hash = hash, RecordCount = recordCount
         };
     }
 
     private static void PrintSummary(List<BackendVariant> methods, Dictionary<string, List<BenchmarkSample>> byMethod)
     {
-        Console.WriteLine(" {0,-18} {1,10} {2,10} {3,10} {4,10} {5,14} {6,12}",
+        Console.WriteLine(" {0,-23} {1,10} {2,10} {3,10} {4,10} {5,14} {6,12}",
             "Method", "Mean ms", "Median ms", "P95 ms", "Min ms", "Managed B", "GC 0/1/2");
         foreach (BackendVariant variant in methods)
         {
@@ -203,7 +248,7 @@ internal static class BenchmarkRunner
             double median = Median(times);
             double p95 = times[(int)Math.Ceiling(times.Length * 0.95) - 1];
             string gc = samples.Sum(s => s.Gc0) + "/" + samples.Sum(s => s.Gc1) + "/" + samples.Sum(s => s.Gc2);
-            Console.WriteLine(" {0,-18} {1,10:F4} {2,10:F4} {3,10:F4} {4,10:F4} {5,14} {6,12}",
+            Console.WriteLine(" {0,-23} {1,10:F4} {2,10:F4} {3,10:F4} {4,10:F4} {5,14} {6,12}",
                 variant.Name, mean, median, p95, times[0],
                 allocations.Length == 0 ? "N/A" : Median(allocations).ToString("N0", CI), gc);
         }
@@ -228,7 +273,8 @@ internal static class BenchmarkRunner
                     s.Gc0.ToString(CI), s.Gc1.ToString(CI), s.Gc2.ToString(CI),
                     s.Files.ToString(CI), s.Directories.ToString(CI), s.Bytes.ToString(CI),
                     s.Hash.ToString("X16", CI), s.RecordCount.ToString(CI),
-                    System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription, root
+                    System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription, root,
+                    s.ParallelWorkers.ToString(CI), s.AllocationScope
                 ];
             csv.WriteLine(string.Join(",", fields.Select(EscapeCsv)));
         }

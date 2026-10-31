@@ -9,7 +9,7 @@ namespace Loudenvier.IO;
 /// System.IO.Enumeration.FileSystemEnumerable; on older Windows targets it uses
 /// NtQueryDirectoryFile; other legacy platforms use DirectoryInfo.
 /// </summary>
-public static class FastFileEnumerator
+public static partial class FastFileEnumerator
 {
     /// <summary>
     /// Enumerates entries under <paramref name="rootPath"/> without allocating
@@ -19,8 +19,15 @@ public static class FastFileEnumerator
     public static void Enumerate(
         string rootPath, FastFileVisitor visitor, FastEnumerationOptions? options = null)
     {
-        if (rootPath == null) throw new ArgumentNullException(nameof(rootPath));
         if (visitor == null) throw new ArgumentNullException(nameof(visitor));
+        var configuration = Prepare(rootPath, options, out FastEnumerationBackend backend);
+        EnumerateCore(configuration, visitor, backend);
+    }
+
+    internal static Configuration Prepare(string rootPath, FastEnumerationOptions? options,
+        out FastEnumerationBackend backend)
+    {
+        if (rootPath == null) throw new ArgumentNullException(nameof(rootPath));
         if (rootPath.Length == 0) throw new ArgumentException("Root cannot be empty.", nameof(rootPath));
 
         options ??= new FastEnumerationOptions();
@@ -47,7 +54,7 @@ public static class FastFileEnumerator
             options.IgnoreCase ?? RuntimeInformation.IsOSPlatform(OSPlatform.Windows),
             options.BufferSize);
 
-        FastEnumerationBackend backend = options.Backend;
+        backend = options.Backend;
         if (backend == FastEnumerationBackend.Auto)
         {
 #if NET6_0_OR_GREATER
@@ -59,6 +66,12 @@ public static class FastFileEnumerator
 #endif
         }
 
+        return configuration;
+    }
+
+    private static void EnumerateCore(Configuration configuration, FastFileVisitor visitor,
+        FastEnumerationBackend backend)
+    {
         switch (backend)
         {
             case FastEnumerationBackend.WindowsNt:
@@ -77,7 +90,7 @@ public static class FastFileEnumerator
                 PortableFileEnumerator.Enumerate(configuration, visitor);
                 return;
             default:
-                throw new ArgumentOutOfRangeException(nameof(options));
+                throw new ArgumentOutOfRangeException(nameof(backend));
         }
     }
 

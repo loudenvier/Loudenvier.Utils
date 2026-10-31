@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using Loudenvier.IO;
 
 namespace Loudenvier.FastFileEnumerator.LegacySmoke;
@@ -35,7 +36,25 @@ internal static class Program
                 }, new FastEnumerationOptions { Backend = backend });
                 if (dirs != 1 || files != 2 || size != 8)
                     throw new Exception("Invalid results for " + backend);
-                Console.WriteLine("PASS .NET Framework 4.7.2: " + backend);
+                foreach (int degree in new[] { 1, 2, 4, 8 })
+                {
+                    var locals = new int[degree];
+                    IO.FastFileEnumerator.EnumerateParallel(root, worker =>
+                        (in FastFileEntry _) => locals[worker]++,
+                        new FastEnumerationOptions { Backend = backend }, degree);
+                    if (locals.Sum() != 3)
+                        throw new Exception("Parallel counts incorrect for " + backend + "/P" + degree);
+                }
+                bool propagated = false;
+                try
+                {
+                    IO.FastFileEnumerator.EnumerateParallel(root,
+                        (in FastFileEntry _) => throw new IOException("parallel error"),
+                        new FastEnumerationOptions { Backend = backend, IgnoreInaccessible = true }, 4);
+                }
+                catch (IOException ex) when (ex.Message == "parallel error") { propagated = true; }
+                if (!propagated) throw new Exception("Parallel callback exception lost");
+                Console.WriteLine("PASS .NET Framework 4.7.2: " + backend + " sequential and P1/P2/P4/P8");
             }
         }
         finally { Directory.Delete(root, true); }

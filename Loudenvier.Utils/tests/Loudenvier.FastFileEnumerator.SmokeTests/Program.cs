@@ -28,6 +28,8 @@ try
     foreach (string path in Directory.EnumerateFileSystemEntries(root, "*", SearchOption.AllDirectories))
         expectedAll.Add(Path.GetRelativePath(root, path));
 
+    VerifyParallel(root, expectedAll, backends);
+
     foreach (FastEnumerationBackend backend in backends)
     {
         var actualAll = new Dictionary<string, (bool isDir, long length)>(StringComparer.Ordinal);
@@ -148,6 +150,74 @@ finally
 static void Check(bool condition, string message)
 {
     if (!condition) throw new Exception(message);
+}
+
+// Parallel scans use worker-local sinks: none of the benchmark callbacks
+// need a lock, and the union must be exactly the sequential reference set.
+static void VerifyParallel(string root, HashSet<string> expected, List<FastEnumerationBackend> backends)
+{
+    foreach (FastEnumerationBackend backend in backends)
+    {
+        var options = new FastEnumerationOptions { Backend = backend };
+        foreach (int degree in new[] { 1, 2, 4, 8 })
+        {
+            var locals = new Dictionary<string, (bool IsDir, long Size)>[degree];
+            FastFileEnumerator.EnumerateParallel(root, worker =>
+            {
+                var seen = new Dictionary<string, (bool, long)>(StringComparer.Ordinal);
+                locals[worker] = seen;
+                return (in FastFileEntry e) =>
+                {
+                    string relative = Path.GetRelativePath(root, e.GetFullPath());
+                    if (!seen.TryAdd(relative, (e.IsDirectory, e.Length)))
+                        throw new Exception("Duplicate within worker: " + relative);
+                    Check(e.LastWriteTimeUtc.Kind == DateTimeKind.Utc, "Parallel timestamp not UTC");
+                };
+            }, options, degree);
+
+            var combined = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var local in locals)
+                foreach (string key in local.Keys)
+                    Check(combined.Add(key), backend + "/P" + degree + " duplicate: " + key);
+            Check(combined.SetEquals(expected), backend + "/P" + degree + " missing/extra entries");
+        }
+
+        // Concurrent invocation is opt-in: an ordinary shared visitor must be thread-safe.
+        int count = 0;
+        FastFileEnumerator.EnumerateParallel(root,
+            (in FastFileEntry _) => System.Threading.Interlocked.Increment(ref count),
+            options, maxDegreeOfParallelism: 4);
+        Check(count == expected.Count, backend + ": shared visitor count incorrect");
+
+        var filtered = new System.Collections.Concurrent.ConcurrentDictionary<string, byte>();
+        FastFileEnumerator.EnumerateParallel(root, (in FastFileEntry e) =>
+        {
+            Check(!e.IsDirectory, "Parallel filter returned directory");
+            filtered.TryAdd(e.FileName.ToString(), 0);
+        }, new FastEnumerationOptions
+        {
+            Backend = backend, IncludeDirectories = false, SearchPattern = "*.TXT", IgnoreCase = true
+        }, 4);
+        Check(filtered.Keys.ToHashSet(StringComparer.Ordinal).SetEquals(new[] { "root.txt", "SUB.TXT", "ãção.txt" }),
+            backend + ": filtered traversal failed");
+
+        count = 0;
+        FastFileEnumerator.EnumerateParallel(root,
+            (in FastFileEntry _) => System.Threading.Interlocked.Increment(ref count),
+            new FastEnumerationOptions { Backend = backend, RecurseSubdirectories = false }, 8);
+        Check(count == 4, backend + ": nonrecursive parallel scan returned incorrect count");
+
+        bool propagated = false;
+        try
+        {
+            FastFileEnumerator.EnumerateParallel(root,
+                (in FastFileEntry _) => throw new IOException("parallel visitor failure"),
+                new FastEnumerationOptions { Backend = backend, IgnoreInaccessible = true }, 4);
+        }
+        catch (IOException ex) when (ex.Message == "parallel visitor failure") { propagated = true; }
+        Check(propagated, backend + ": parallel callback exception was swallowed");
+        Console.WriteLine("PASS parallel " + backend + " (P1/P2/P4/P8, filters, callbacks, exceptions)");
+    }
 }
 
 // Regression tests for the single-allocation GetFullPath() implementation.

@@ -13,9 +13,12 @@ internal sealed class BackendVariant
 {
     public string Name { get; }
     public IO.FastEnumerationOptions Options { get; }
-    public BackendVariant(string name, IO.FastEnumerationBackend backend, int bufferBytes)
+    // 0 is the original sequential method; 1 uses EnumerateParallel's direct path.
+    public int ParallelWorkers { get; }
+    public BackendVariant(string name, IO.FastEnumerationBackend backend, int bufferBytes, int parallelWorkers = 0)
     {
         Name = name;
+        ParallelWorkers = parallelWorkers;
         Options = new IO.FastEnumerationOptions
         {
             Backend = backend,
@@ -45,12 +48,15 @@ internal sealed class BenchmarkOptions
     public bool DiagnosticsFocusedOnly;
     public string DiagnosticBackend = "nt";
     public int DiagnosticBufferBytes = 52 * 1024;
+    // Parallel worker counts requested via --parallel 1,2,4,8.
+    // Sequential variants remain included as baseline.
+    public int[] ParallelDegrees = [];
 
     public static BenchmarkOptions Parse(string[] args)
     {
         var result = new BenchmarkOptions();
         var valid = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
-            "--samples", "--warmup", "--buffers", "--backends", "--workloads", "--csv", "--gc-between-workloads", "--diag-backend", "--diag-buffer"
+            "--samples", "--warmup", "--buffers", "--backends", "--workloads", "--csv", "--gc-between-workloads", "--diag-backend", "--diag-buffer", "--parallel"
         };
         for (int i = 0; i < args.Length; ++i)
         {
@@ -71,6 +77,7 @@ internal sealed class BenchmarkOptions
             string value = args[i];
             switch (arg.ToLowerInvariant())
             {
+                case "--parallel": result.ParallelDegrees = ParseParallelDegrees(value); break;
                 case "--samples": result.Samples = Positive(value, arg); break;
                 case "--warmup": result.Warmup = NonNegative(value, arg); break;
                 case "--csv": result.CsvPath = value; break;
@@ -124,10 +131,32 @@ internal sealed class BenchmarkOptions
                 default: throw new ArgumentException("Unknown backend '" + backend + "'. Use auto,bcl,nt,portable.");
             }
         }
+        if (ParallelDegrees.Length != 0)
+        {
+            var originals = variants.ToArray();
+            foreach (BackendVariant original in originals)
+                foreach (int degree in ParallelDegrees)
+                    variants.Add(new BackendVariant(original.Name + "/P" + degree.ToString(CultureInfo.InvariantCulture),
+                        original.Options.Backend, original.Options.BufferSize, degree));
+        }
         if (variants.Count == 0) throw new ArgumentException("No available backends selected.");
         if (variants.Select(v => v.Name).Distinct(StringComparer.Ordinal).Count() != variants.Count)
             throw new ArgumentException("Duplicate backend variants requested.");
         return variants;
+    }
+
+    private static int[] ParseParallelDegrees(string value)
+    {
+        var degrees = new List<int>();
+        foreach (string raw in value.Split(','))
+        {
+            if (!int.TryParse(raw.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int degree)
+                || degree < 1 || degree > 256)
+                throw new ArgumentException("--parallel accepts comma-separated worker counts between 1 and 256.");
+            if (!degrees.Contains(degree)) degrees.Add(degree);
+        }
+        if (degrees.Count == 0) throw new ArgumentException("--parallel needs at least one count.");
+        return [.. degrees];
     }
 
     private static string FormatBuffer(int bytes) => bytes % 1024 == 0
