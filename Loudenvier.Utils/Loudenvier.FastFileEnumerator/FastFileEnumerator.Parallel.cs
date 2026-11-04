@@ -7,6 +7,31 @@ namespace Loudenvier.IO;
 public static partial class FastFileEnumerator
 {
     /// <summary>
+    /// Benchmark-only scheduler instrumentation. Never called from the public hot path.
+    /// Requires a recursive tree and a degree of at least two. Callers own metrics.
+    /// </summary>
+    internal static void EnumerateParallelMeasured(string rootPath,
+        Func<int, FastFileVisitor> visitorFactory,
+        FastEnumerationOptions? options, ParallelDirectoryMetrics metrics)
+    {
+        if (visitorFactory == null) throw new ArgumentNullException(nameof(visitorFactory));
+        if (metrics == null) throw new ArgumentNullException(nameof(metrics));
+        Configuration config = Prepare(rootPath, options, out FastEnumerationBackend backend);
+        if (!config.Recursive) throw new ArgumentException("Measured scheduling requires recursion.", nameof(options));
+        if (backend == FastEnumerationBackend.WindowsNt &&
+            !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            throw new PlatformNotSupportedException("The NT backend requires Windows.");
+#if !NET6_0_OR_GREATER
+        if (backend == FastEnumerationBackend.Bcl)
+            throw new PlatformNotSupportedException("The BCL backend requires .NET 6 or later.");
+#endif
+        var visitors = new FastFileVisitor[metrics.Workers.Length];
+        for (int i = 0; i < visitors.Length; i++)
+            visitors[i] = visitorFactory(i) ?? throw new InvalidOperationException("Visitor factory returned null.");
+        ParallelDirectoryScheduler.Run(config, backend, visitors, metrics);
+    }
+
+    /// <summary>
     /// Enumerates independent directories on multiple workers. The visitor can be
     /// invoked concurrently: it must be thread-safe. Spans are valid only during
     /// the callback on the current worker. Visit order is unspecified.

@@ -29,6 +29,25 @@ try
         expectedAll.Add(Path.GetRelativePath(root, path));
 
     VerifyParallel(root, expectedAll, backends);
+    // Opt-in telemetry follows exactly the same entries and schedules root +
+    // the two traversable subdirectories; it is never in the default hot path.
+    foreach (FastEnumerationBackend backend in backends)
+    {
+        var metrics = new ParallelDirectoryMetrics(4);
+        var counts = new int[4];
+        FastFileEnumerator.EnumerateParallelMeasured(root,
+            worker => (in FastFileEntry _) => counts[worker]++,
+            new FastEnumerationOptions { Backend = backend }, metrics);
+        Check(counts.Sum() == expectedAll.Count, backend + ": measured callback count");
+        Check(metrics.Workers.Sum(w => w.Files) == 5, backend + ": measured file count");
+        Check(metrics.Workers.Sum(w => w.DirectoryEntries) == 2, backend + ": measured directory entries");
+        Check(metrics.Workers.Sum(w => w.DirectoriesScanned) == 3, backend + ": measured scheduled directories");
+        Check(metrics.TotalEnqueued == 3 && metrics.PeakQueuedDirectories >= 1,
+            backend + ": measured queue accounting");
+        Check(metrics.PeakActiveWorkers >= 1 && metrics.PeakActiveWorkers <= 4,
+            backend + ": measured active worker count");
+    }
+
 
     foreach (FastEnumerationBackend backend in backends)
     {

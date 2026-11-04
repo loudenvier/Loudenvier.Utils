@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,6 +21,8 @@ internal sealed class ParallelDirectoryScheduler
     private readonly object _sync = new();
     private int _pending = 1; // includes queued and in-flight directories
     private ExceptionDispatchInfo? _failure;
+    private readonly ParallelDirectoryMetrics? _metrics;
+    private int _active;
 
     private readonly struct Pending
     {
@@ -29,18 +32,26 @@ internal sealed class ParallelDirectoryScheduler
     }
 
     private ParallelDirectoryScheduler(FastFileEnumerator.Configuration config,
-        FastEnumerationBackend backend, FastFileVisitor[] visitors)
+        FastEnumerationBackend backend, FastFileVisitor[] visitors, ParallelDirectoryMetrics? metrics)
     {
         _config = config;
         _backend = backend;
         _visitors = visitors;
+        _metrics = metrics;
         _queue.Enqueue(new Pending(config.Root, true));
     }
 
     internal static void Run(FastFileEnumerator.Configuration config,
         FastEnumerationBackend backend, FastFileVisitor[] visitors)
     {
-        var engine = new ParallelDirectoryScheduler(config, backend, visitors);
+        Run(config, backend, visitors, null);
+    }
+
+    internal static void Run(FastFileEnumerator.Configuration config, FastEnumerationBackend backend,
+        FastFileVisitor[] visitors, ParallelDirectoryMetrics? metrics)
+    {
+        var engine = new ParallelDirectoryScheduler(config, backend, visitors, metrics);
+        if (metrics != null) metrics.SchedulerStartTimestamp = Stopwatch.GetTimestamp();
         var tasks = new Task[visitors.Length - 1];
         int started = 0;
         try
@@ -67,6 +78,10 @@ internal sealed class ParallelDirectoryScheduler
 
     private void Work(int workerIndex)
     {
+        long workerStart = _metrics == null ? 0 : Stopwatch.GetTimestamp();
+        ParallelWorkerMetrics? metricForWorker = _metrics?.Workers[workerIndex];
+        if (metricForWorker != null)
+            metricForWorker.StartDelayTicks = workerStart - _metrics!.SchedulerStartTimestamp;
         try
         {
             FastFileVisitor visitor = _visitors[workerIndex];
@@ -76,33 +91,80 @@ internal sealed class ParallelDirectoryScheduler
             ParallelDirectoryWorker? scanner = null;
             try
             {
-                while (TryTake(out Pending work))
+                ParallelWorkerMetrics? metric = _metrics?.Workers[workerIndex];
+                if (metric != null) metric.ManagedThreadId = Thread.CurrentThread.ManagedThreadId;
+                long allocationStart = metric == null ? -1 : ParallelDirectoryMetrics.ThreadAllocationBytes();
+                FastFileVisitor effectiveVisitor = metric == null ? visitor :
+                    (in FastFileEntry entry) => {
+                        if (entry.IsDirectory) metric.DirectoryEntries++; else metric.Files++;
+                        visitor(in entry);
+                    };
+                try
                 {
-                    try
+                    while (TryTake(out Pending work, metric))
                     {
-                        scanner ??= new ParallelDirectoryWorker(_config, _backend);
-                        scanner.Scan(work.Path, work.IsRoot, visitor, addChild);
+                        try
+                        {
+                            scanner ??= new ParallelDirectoryWorker(_config, _backend);
+                            if (metric != null)
+                            {
+                                metric.DirectoriesScanned++;
+                                if (_backend == FastEnumerationBackend.WindowsNt)
+                                    metric.ReservedNativeBytes = _config.BufferSize;
+                                long start = Stopwatch.GetTimestamp();
+                                try { scanner.Scan(work.Path, work.IsRoot, effectiveVisitor, addChild); }
+                                finally { metric.ScanTicks += Stopwatch.GetTimestamp() - start; }
+                            }
+                            else scanner.Scan(work.Path, work.IsRoot, visitor, addChild);
+                        }
+                        finally { Finished(); }
                     }
-                    finally { Finished(); }
+                }
+                finally
+                {
+                    if (metric != null)
+                    {
+                        long allocated = ParallelDirectoryMetrics.ThreadAllocationBytes();
+                        metric.ThreadAllocatedBytes = allocationStart < 0 || allocated < 0 ? -1 : allocated - allocationStart;
+                    }
                 }
             }
             finally { scanner?.Dispose(); }
         }
         catch (Exception ex) { Fail(ex); }
+        finally
+        {
+            if (metricForWorker != null)
+                metricForWorker.LifetimeTicks = Stopwatch.GetTimestamp() - workerStart;
+        }
     }
 
-    private bool TryTake(out Pending work)
+    private bool TryTake(out Pending work, ParallelWorkerMetrics? metric)
     {
         lock (_sync)
         {
             while (_queue.Count == 0 && _pending != 0 && _failure == null)
-                Monitor.Wait(_sync);
+            {
+                if (metric == null) Monitor.Wait(_sync);
+                else
+                {
+                    long start = Stopwatch.GetTimestamp();
+                    Monitor.Wait(_sync);
+                    metric.WaitTicks += Stopwatch.GetTimestamp() - start;
+                }
+            }
             if (_failure != null || _pending == 0)
             {
                 work = default;
                 return false;
             }
             work = _queue.Dequeue();
+            if (_metrics != null)
+            {
+                _active++;
+                if (_active > _metrics.PeakActiveWorkers)
+                    _metrics.PeakActiveWorkers = _active;
+            }
             return true;
         }
     }
@@ -114,6 +176,12 @@ internal sealed class ParallelDirectoryScheduler
             if (_failure != null) return;
             _pending++;
             _queue.Enqueue(new Pending(path, false));
+            if (_metrics != null)
+            {
+                _metrics.TotalEnqueued++;
+                if (_queue.Count > _metrics.PeakQueuedDirectories)
+                    _metrics.PeakQueuedDirectories = _queue.Count;
+            }
             Monitor.Pulse(_sync);
         }
     }
@@ -122,6 +190,7 @@ internal sealed class ParallelDirectoryScheduler
     {
         lock (_sync)
         {
+            if (_metrics != null) _active--;
             if (--_pending == 0) Monitor.PulseAll(_sync);
         }
     }

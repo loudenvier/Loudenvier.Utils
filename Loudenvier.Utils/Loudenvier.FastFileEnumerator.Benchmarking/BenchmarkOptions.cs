@@ -46,6 +46,11 @@ internal sealed class BenchmarkOptions
     public bool Diagnostics;
     public bool DiagnosticsOnly;
     public bool DiagnosticsFocusedOnly;
+    public bool P1Check;
+    public bool SchedulerProfile;
+    public bool TreeProfile;
+    public int ProfileSamples = 5;
+    public int ProfileWarmup = 1;
     public string DiagnosticBackend = "nt";
     public int DiagnosticBufferBytes = 52 * 1024;
     // Parallel worker counts requested via --parallel 1,2,4,8.
@@ -56,13 +61,16 @@ internal sealed class BenchmarkOptions
     {
         var result = new BenchmarkOptions();
         var valid = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
-            "--samples", "--warmup", "--buffers", "--backends", "--workloads", "--csv", "--gc-between-workloads", "--diag-backend", "--diag-buffer", "--parallel"
+            "--samples", "--warmup", "--buffers", "--backends", "--workloads", "--csv", "--gc-between-workloads", "--diag-backend", "--diag-buffer", "--parallel", "--profile-samples", "--profile-warmup"
         };
         for (int i = 0; i < args.Length; ++i)
         {
             string arg = args[i];
             if (arg == "--help" || arg == "-h" || arg == "/?") { result.ShowHelp = true; return result; }
             if (arg == "--gc-between-workloads") { result.ForceGcBeforeWorkload = true; continue; }
+            if (arg == "--p1-check") { result.P1Check = true; continue; }
+            if (arg == "--scheduler-profile") { result.SchedulerProfile = true; continue; }
+            if (arg == "--tree-profile") { result.TreeProfile = true; continue; }
             if (arg == "--diagnostics") { result.Diagnostics = true; continue; }
             if (arg == "--diagnostics-only") { result.DiagnosticsOnly = true; continue; }
             if (arg == "--diagnostics-focused-only") { result.DiagnosticsFocusedOnly = true; continue; }
@@ -77,6 +85,8 @@ internal sealed class BenchmarkOptions
             string value = args[i];
             switch (arg.ToLowerInvariant())
             {
+                case "--profile-samples": result.ProfileSamples = Positive(value, arg); break;
+                case "--profile-warmup": result.ProfileWarmup = NonNegative(value, arg); break;
                 case "--parallel": result.ParallelDegrees = ParseParallelDegrees(value); break;
                 case "--samples": result.Samples = Positive(value, arg); break;
                 case "--warmup": result.Warmup = NonNegative(value, arg); break;

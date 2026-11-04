@@ -83,6 +83,12 @@ internal static class BenchmarkRunner
 #endif
         Console.WriteLine("Reference: " + baseline.Directories + " directories; " + baseline.Files +
             " files; " + baseline.Bytes + " logical bytes; " + baseline.Entries.Count + " entries.");
+        if (options.P1Check || options.SchedulerProfile || options.TreeProfile)
+        {
+            BenchmarkInvestigations.Execute(options, baseline, variants);
+            return;
+        }
+
         if (options.DiagnosticsFocusedOnly)
         {
             Console.WriteLine("Running FOCUSED JIT / string allocation diagnostics without normal benchmark.");
@@ -156,7 +162,7 @@ internal static class BenchmarkRunner
         }
     }
 
-    private static BenchmarkSample RunOne(string root, BackendVariant variant, Workload workload,
+    internal static BenchmarkSample RunOne(string root, BackendVariant variant, Workload workload,
         ReferenceSnapshot expected, int iteration)
     {
         // Per-worker callback factories eliminate hot-path contention; only the

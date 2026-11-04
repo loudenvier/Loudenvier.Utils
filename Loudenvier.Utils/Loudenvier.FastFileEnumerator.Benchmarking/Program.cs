@@ -42,10 +42,16 @@ Options:
                                     with N methods; order is rotated and reversed per full cycle.
   --warmup 3                        Warmup rounds per workload.
   --csv results.csv                 Raw measurements output (UTF-8 CSV).
+  --parallel 1,2,4,8,16             Add degree variants in normal benchmarks.
+  --p1-check                        Isolated alternating sequential/P1 pairs; saves *-p1.csv.
+  --scheduler-profile               Opt-in instrumented workers; saves *-workers.csv and *-scheduler.csv.
+  --tree-profile                    Files-per-directory histogram, including empty dirs; saves *-tree.csv.
+  --profile-samples 5               Samples per scheduler profile (default: 5).
+  --profile-warmup 1                Warmups per scheduler profile (default: 1).
   --gc-between-workloads           Full GC between workloads only, never per sample.
   --diagnostics                    Run managed diagnostics after normal benchmark.
   --diagnostics-only               Run the original diagnostic suites (no normal measurements).
-  --diagnostics-focused-only       NEW: controlled FNV/JIT and path-allocation diagnostics only.
+  --diagnostics-focused-only       Controlled FNV/JIT and path-allocation diagnostics only.
                                    Writes *-diag-focused.csv; library source unchanged.
   --diag-backend nt                Diagnostic enumeration backend: auto,bcl,nt,portable.
                                    Default: nt on Windows; use bcl elsewhere.
@@ -60,6 +66,11 @@ Linux/macOS + net10.0: Auto, BCL, Portable.
 Linux/macOS + netstandard2.0 host: Auto (Portable), Portable.
 
 No new NuGet packages are added. The benchmark references the independent FastFileEnumerator project.
-A complete independent reference validation runs before timing.");
+A complete independent reference validation runs before timing.
+The --p1-check/--scheduler-profile/--tree-profile modes run in place of the normal benchmark.
+P1 check uses the original non-instrumented public APIs. Instrumented scheduler time includes
+per-entry diagnostic accounting and must NOT be compared directly with normal benchmark time.
+Thread allocation in scheduler profile is measured inside each worker. On net472 it is
+available only if the host CLR provides GC.GetAllocatedBytesForCurrentThread (e.g. 4.8).");
     }
 }

@@ -45,6 +45,14 @@ internal static class Program
                     if (locals.Sum() != 3)
                         throw new Exception("Parallel counts incorrect for " + backend + "/P" + degree);
                 }
+                var metrics = new ParallelDirectoryMetrics(4);
+                int[] measuredCounts = new int[4];
+                IO.FastFileEnumerator.EnumerateParallelMeasured(root,
+                    worker => (in FastFileEntry _) => measuredCounts[worker]++,
+                    new FastEnumerationOptions { Backend = backend }, metrics);
+                if (measuredCounts.Sum() != 3 || metrics.Workers.Sum(w => w.Files) != 2 ||
+                    metrics.Workers.Sum(w => w.DirectoriesScanned) != 2 || metrics.TotalEnqueued != 2)
+                    throw new Exception("Scheduler instrumentation totals incorrect for " + backend);
                 bool propagated = false;
                 try
                 {
